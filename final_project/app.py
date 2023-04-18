@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import mysql.connector
+import re
 # import psycopg2.extras
 # import MySQLdb.cursors
-# import re
+
 
 app = Flask(__name__)
 
@@ -28,11 +29,23 @@ mydb = mysql.connector.connect(
 # Intialize MySQL
 # mysql = MySQL(app)
 
+# Home page, only available to the login user
+@app.route('/login/home')
+def home():
+    # Check user login status
+    if 'loggedin' in session:
+        # If user is login, show the home page
+        return render_template('home.html', username=session['username'])
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
+
+
+# Login function
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
     # Error message
     msg = ''
-    # Check username and password in placeholder
+    # Check username and password exist in placeholder
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
         username = request.form['username']
         password = request.form['password']
@@ -57,6 +70,56 @@ def login():
 
     return render_template('index.html', msg=msg)
 
+
+# Logout function
+@app.route('/login/logout')
+def logout():
+    # Remove session data
+   session.pop('loggedin', None)
+   session.pop('id', None)
+   session.pop('username', None)
+
+   # Redirect to login page
+   return redirect(url_for('login'))
+
+
+# Register function
+@app.route('/login/register', methods=['GET', 'POST'])
+def register():
+    # Error message
+    msg = ''
+    # Check username, password and email exist in placeholder
+    if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form:
+        username = request.form['username']
+        password = request.form['password']
+        email = request.form['email']
+        
+        # Check the account exist in DB
+        cursor = mydb.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM accounts WHERE username = %s', (username,))
+        account = cursor.fetchone()
+
+        # If account exists show error and validation checks
+        if account:
+            msg = 'Account already exists!'
+        # Email format needs to be correct
+        elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+            msg = 'Invalid email address!'
+        elif not re.match(r'[A-Za-z0-9]+', username):
+            msg = 'Username must contain only characters and numbers!'
+        elif not username or not password or not email:
+            msg = 'Please fill out the form!'
+        else:
+            # Account doesnt exists and the form data is valid, now insert new account into accounts table
+            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s)', (username, password, email,))
+            mydb.commit()
+            msg = 'You have successfully registered!'
+        
+    elif request.method == 'POST':
+        msg = 'Please fill out the form'
+
+    return render_template('register.html', msg=msg)
+     
 if __name__ == '__main__':
     #app.run()
     app.run(debug=True) # debug mode on
