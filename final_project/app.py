@@ -63,7 +63,8 @@ def login():
             session['id'] = account['id']
             session['username'] = account['username']
             # Redirect to home page
-            return "login success"
+            # return "login IN!"
+            return redirect(url_for('home'))
         else:
             # If account doesnt exist or username/password incorrect
             msg = 'Incorrect Username or Password!'
@@ -119,6 +120,21 @@ def register():
         msg = 'Please fill out the form'
 
     return render_template('register.html', msg=msg)
+
+
+# user profile
+@app.route('/pythonlogin/profile')
+def profile():
+    # Check if user is loggedin
+    if 'loggedin' in session:
+        # Get user account info
+        cursor = mydb.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM accounts WHERE id = %s', (session['id'],))
+        account = cursor.fetchone()
+        # Show the profile page with account info
+        return render_template('profile.html', account=account)
+    # User is not loggedin redirect to login page
+    return redirect(url_for('login'))
      
 if __name__ == '__main__':
     #app.run()
