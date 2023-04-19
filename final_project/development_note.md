@@ -9,6 +9,7 @@ Apr 19:
 - home page
 
 TO-DO:
+- insert date into mysql db [#1]
 - password hash
 - register function adding user type
 
