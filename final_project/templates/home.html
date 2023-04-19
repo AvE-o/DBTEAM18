@@ -5,5 +5,17 @@
 {% block content %}
 <h2>Home Page</h2>
 <p>Welcome back, {{ username }}!</p>
+
+<div> 
+    <form action="{{ url_for('home') }}" method="post" autocomplete="off">
+        <label for="test data!">
+            <i class="fas fa-user"></i>
+        </label>
+        <input type="text" name="integer" placeholder="Integer" id="integer" required>
+ 
+        <input type="submit" value="Write data!">
+    </form>
+</div>
+
 {% endblock %}
 

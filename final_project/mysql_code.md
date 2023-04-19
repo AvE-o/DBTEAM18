@@ -1,4 +1,5 @@
 # MYSQL DATABASE SETUP
+# Create login database
 CREATE DATABASE IF NOT EXISTS `pythonlogin` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 USE `pythonlogin`;
 
@@ -11,3 +12,11 @@ CREATE TABLE IF NOT EXISTS `accounts` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
 INSERT INTO `accounts` (`id`, `username`, `password`, `email`) VALUES (1, 'test', 'test', 'test@test.com');
+
+
+# Test insert/get data
+CREATE TABLE IF NOT EXISTS `testdb`(
+   `test_id` INT UNSIGNED AUTO_INCREMENT,
+   `runoob_title` INT(100) NOT NULL,
+   PRIMARY KEY ( `test_id` )
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;

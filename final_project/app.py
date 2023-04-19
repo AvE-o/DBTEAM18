@@ -29,12 +29,24 @@ mydb = mysql.connector.connect(
 # Intialize MySQL
 # mysql = MySQL(app)
 
+
+@app.route('/')
+def index():
+    # redirect to login page
+    return redirect(url_for('login'))
+
 # Home page, only available to the login user
-@app.route('/login/home')
+@app.route('/login/home', methods=['GET', 'POST'])
 def home():
     # Check user login status
     if 'loggedin' in session:
         # If user is login, show the home page
+        if request.method == 'POST':
+            cursor = mydb.cursor(dictionary=True)
+            integer = request.form['integer']
+            cursor.execute('INSERT INTO testdb VALUES (NULL, %s)', (integer,))
+            mydb.commit()
+
         return render_template('home.html', username=session['username'])
     # If not, redirect to the login page
     return redirect(url_for('login'))
