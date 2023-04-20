@@ -56,7 +56,9 @@ def home():
 @app.route('/login/testdb', methods=['GET', 'POST'])
 def testdb():
     msg = ''
+    data = {}
     if 'loggedin' in session:
+        #cursor.close()
         if request.method == 'POST':
             name = request.form['name']
             number = request.form['number']
@@ -64,8 +66,13 @@ def testdb():
             cursor.execute("INSERT INTO testdb VALUES ('{}',{})".format(name, int(number)))
             mydb.commit()
             msg = 'Data enter complete'
+        
+        # display data in DB
+        cursor = mydb.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM testdb")
+        data = cursor.fetchall()
 
-        return render_template('testdb.html', msg = msg)
+        return render_template('testdb.html', msg = msg, data = data)
     
     # If not, redirect to the login page
     return redirect(url_for('login'))

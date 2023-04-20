@@ -5,11 +5,32 @@
 {% block content %}
 <h2>INSERT DATA FROM HERE</h2>
 
+
+
+
 <form method="POST" enctype="multipart/form-data">
     <input type="text" name="name" placeholder="Name" id="name" required>
     <input type="number" name="number" placeholder="Number" id="number" required>
-    <button type="submit" href="/">Submit</button>
+    <button type="submit" href="/" >Submit</button>
     <div class="msg">{{ msg }}</div>
 </form>
+
+<table>
+    <thead>
+        <tr>
+            <th>NAME</th>
+            <th>NUMBER</th>
+        </tr>
+    </thead> 
+    <tbody>
+        {% for row in data %}
+            <tr>
+                <td>{{row.name}}</td>
+                <td>{{row.number}}</td>
+            </tr>
+        {% endfor %}
+    </tbody>  
+</table>
+
 
 {% endblock %}
