@@ -41,17 +41,34 @@ def home():
     # Check user login status
     if 'loggedin' in session:
         # If user is login, show the home page
-        if request.method == 'POST':
-            cursor = mydb.cursor(dictionary=True)
-            integer = request.form['integer']
-            cursor.execute('INSERT INTO testdb VALUES (NULL, %s)', (integer,))
-            mydb.commit()
+        # if request.method == 'POST':
+            #cursor = mydb.cursor(dictionary=True)
+            #integer = request.form['integer']
+            #cursor.execute('INSERT INTO testdb VALUES (NULL, %s)', (integer,))
+            #mydb.commit()
 
         return render_template('home.html', username=session['username'])
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
 
+# Test database function page
+@app.route('/login/testdb', methods=['GET', 'POST'])
+def testdb():
+    msg = ''
+    if 'loggedin' in session:
+        if request.method == 'POST':
+            name = request.form['name']
+            number = request.form['number']
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute("INSERT INTO testdb VALUES ('{}',{})".format(name, int(number)))
+            mydb.commit()
+            msg = 'Data enter complete'
+
+        return render_template('testdb.html', msg = msg)
+    
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
 # Login function
 @app.route('/login/', methods=['GET', 'POST'])
 def login():

@@ -15,8 +15,6 @@ INSERT INTO `accounts` (`id`, `username`, `password`, `email`) VALUES (1, 'test'
 
 
 # Test insert/get data
-CREATE TABLE IF NOT EXISTS `testdb`(
-   `test_id` INT UNSIGNED AUTO_INCREMENT,
-   `runoob_title` INT(100) NOT NULL,
-   PRIMARY KEY ( `test_id` )
-)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE testdb(
+	name VARCHAR(40),
+   number INT);
