@@ -13,10 +13,13 @@ Apr 20:
 - insert data into db
 - get data from db
 
-TO-DO:
-- Think what function need to be implement
+Apr 21:
 - password hash
 - register function adding user type
+
+
+TO-DO:
+- Think what function need to be implement
 
 
 Extra:

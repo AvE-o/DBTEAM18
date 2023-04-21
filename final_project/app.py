@@ -3,7 +3,6 @@ from werkzeug.security import generate_password_hash, check_password_hash #hash 
 import mysql.connector
 import re 
 # import hashlib
-
 # import psycopg2.extras
 # import MySQLdb.cursors
 
@@ -95,10 +94,10 @@ def login():
         
         # Fetch one record
         account = cursor.fetchone()
-        hashed_password = account['password']
-        print(hashed_password)
         # If account exists
         if account:
+            hashed_password = account['password']
+            print(hashed_password)
             if(check_password_hash(hashed_password, password)):
                 # Create session data, this could be use in other routes
                 session['loggedin'] = True
@@ -107,6 +106,9 @@ def login():
                 # Redirect to home page
                 # return "login IN!"
                 return redirect(url_for('home'))
+            else:
+                # If account doesnt exist or username/password incorrect
+                msg = 'Incorrect Username or Password!'
         else:
             # If account doesnt exist or username/password incorrect
             msg = 'Incorrect Username or Password!'
@@ -136,6 +138,8 @@ def register():
         username = request.form['username']
         password = request.form['password']
         email = request.form['email']
+        account_type = request.form['account_type']
+        print(account_type)
 
         # Hashing password
         hashed_password = generate_password_hash(password)
@@ -157,7 +161,7 @@ def register():
             msg = 'Please fill out the form!'
         else:
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
-            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s)', (username, hashed_password, email,))
+            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s)', (username, hashed_password, account_type, email,))
             mydb.commit()
             msg = 'You have successfully registered!'
         

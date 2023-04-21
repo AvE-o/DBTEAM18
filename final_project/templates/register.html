@@ -27,6 +27,14 @@
 					<i class="fas fa-envelope"></i>
 				</label>
 				<input type="email" name="email" placeholder="Email" id="email" required>
+				<label for="type">
+					<i class="fas fa-dragon"></i>
+				</label>
+				<select type = 'account_type' name="account_type">
+					<option value="">--Please choose an option--</option>
+					<option value="customers">Customers</option>
+					<option value="employees">Employees</option>
+				</select>
 				<div class="msg">{{ msg }}</div>
 				<input type="submit" value="Register">
 			</form>
