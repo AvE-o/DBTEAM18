@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, session
+from werkzeug.security import generate_password_hash, check_password_hash #hash password & check 
 import mysql.connector
-import re
+import re 
+# import hashlib
+
 # import psycopg2.extras
 # import MySQLdb.cursors
 
@@ -85,22 +88,25 @@ def login():
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
         username = request.form['username']
         password = request.form['password']
-        
+
         # Check the account exist in DB
         cursor = mydb.cursor(dictionary=True)
-        cursor.execute('SELECT * FROM accounts WHERE username = %s AND password = %s', (username, password,))
+        cursor.execute('SELECT * FROM accounts WHERE username = %s', (username,))
         
         # Fetch one record
         account = cursor.fetchone()
+        hashed_password = account['password']
+        print(hashed_password)
         # If account exists
         if account:
-            # Create session data, this could be use in other routes
-            session['loggedin'] = True
-            session['id'] = account['id']
-            session['username'] = account['username']
-            # Redirect to home page
-            # return "login IN!"
-            return redirect(url_for('home'))
+            if(check_password_hash(hashed_password, password)):
+                # Create session data, this could be use in other routes
+                session['loggedin'] = True
+                session['id'] = account['id']
+                session['username'] = account['username']
+                # Redirect to home page
+                # return "login IN!"
+                return redirect(url_for('home'))
         else:
             # If account doesnt exist or username/password incorrect
             msg = 'Incorrect Username or Password!'
@@ -130,6 +136,9 @@ def register():
         username = request.form['username']
         password = request.form['password']
         email = request.form['email']
+
+        # Hashing password
+        hashed_password = generate_password_hash(password)
         
         # Check the account exist in DB
         cursor = mydb.cursor(dictionary=True)
@@ -148,7 +157,7 @@ def register():
             msg = 'Please fill out the form!'
         else:
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
-            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s)', (username, password, email,))
+            cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s)', (username, hashed_password, email,))
             mydb.commit()
             msg = 'You have successfully registered!'
         
