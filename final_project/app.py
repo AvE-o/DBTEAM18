@@ -52,7 +52,7 @@ def index():
     # redirect to login page
     return redirect(url_for('login'))
 
-# Home page, only available to the login user
+# Home page, only available to the login customer user
 @app.route('/login/home', methods=['GET', 'POST'])
 def home():
     # Check user login status
@@ -65,6 +65,15 @@ def home():
             #mydb.commit()
 
         return render_template('home.html', username=session['username'])
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
+
+
+@app.route('/login/emphome', methods=['GET', 'POST'])
+def emphome():
+    if 'loggedin' in session:
+        return render_template('emphome.html', username=session['username'])
+    
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
@@ -117,15 +126,23 @@ def login():
         # If account exists
         if account:
             hashed_password = account['password']
+            account_type = account['account_type']
             print(hashed_password)
             if(check_password_hash(hashed_password, password)):
-                # Create session data, this could be use in other routes
-                session['loggedin'] = True
-                session['id'] = account['id']
-                session['username'] = account['username']
-                # Redirect to home page
-                # return "login IN!"
-                return redirect(url_for('home'))
+                if(account_type == 'customers'):
+                    # Create session data, this could be use in other routes
+                    session['loggedin'] = True
+                    session['id'] = account['id']
+                    session['username'] = account['username']
+                    # Redirect to home page
+                    # return "login IN!"
+                    return redirect(url_for('home'))
+                else:
+                    # Create session data, this could be use in other routes
+                    session['loggedin'] = True
+                    session['id'] = account['id']
+                    session['username'] = account['username']
+                    return redirect(url_for('emphome'))
             else:
                 # If account doesnt exist or username/password incorrect
                 msg = 'Incorrect Username or Password!'
