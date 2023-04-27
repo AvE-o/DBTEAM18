@@ -5,7 +5,23 @@ import re
 # import hashlib
 # import psycopg2.extras
 # import MySQLdb.cursors
+"""
+TODO:
+Simon:
+用户可以查询消费记录
+用户可以更改游园日期
+用户买票/退票
 
+Eric:
+用户可以查看游乐园基本信息
+用户Parking 提前预约 [车辆基本信息]
+用户网上购物
+
+Bill:
+管理员可以查询所有用户信息
+管理员添改db[商品信息, show, 游乐项目]
+管理员查看summary
+"""
 
 app = Flask(__name__)
 
@@ -21,9 +37,8 @@ app.secret_key = 'your secret key'
 mydb = mysql.connector.connect(
   host = "localhost",       # 数据库主机地址/db address
   user = "root",            # 数据库用户名/db username
-  passwd = '',              # 数据库密码/db password
-  database = 'pythonlogin'  # 数据库名称/db name
-
+  passwd = 'lOVE0614',              # 数据库密码/db password
+  database = 'pythonlogin',  # 数据库名称/db name
 )
 
 # cursor = mydb.cursor()
@@ -78,9 +93,14 @@ def testdb():
     
     # If not, redirect to the login page
     return redirect(url_for('login'))
+
 # Login function
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
+
+    if 'loggedin' in session:
+        return redirect(url_for('home'))
+
     # Error message
     msg = ''
     # Check username and password exist in placeholder
