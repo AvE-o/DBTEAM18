@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html>
+    <style>
+        table {
+            margin: 0 auto;
+            font-size: 20px;
+            border-collapse: collapse;
+        }
+        td, th {
+            border: 1px solid black;
+            padding: 8px;
+        }
+        .popup{
+            display: none;
+        }
+    </style>
+    <table>
+        <thead>
+            <tr>
+                <th>FirstName</th>
+                <th>LastNname</th>
+                <th>Plan Visit Date</th>
+                <th>Payment Amount</th>
+                <th>Change Visit Date</th>
+                <th>Refund</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+                <tr>
+                    <td>{{ row.v_fname }}</td>
+                    <td>{{ row.v_lname }}</td>
+                    <td>{{ row.visit_date }}</td>
+                    <td>{{ row.pay_amount }}</td>
+                    <td><form method="POST" enctype="multipart/form-data">
+                        <label for="Vdate">Change Visit Date:</label>
+                        <input type="date" id="Vdate" name="Vdate">
+                        <button type="submit" name='action' value='change_date' href="{{ url_for('payhistory')}}">Submit</button>
+                    </form></td>
+                    <td><form method="POST" enctype="multipart/form-data"> 
+                        <input type="hidden" name="row_value" value="{{ row.ticket_id }}">
+                        <button type="submit" name='action' value='refund' href="{{ url_for('payhistory')}}">Refund</button>
+                    </form></td>
+            {% endfor %}
+        </tbody>
+    </table>
+</html>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<head>
+    <h2>Home Page</h2>
+    <p>Welcome back, {{ username }}!</p>
+    <style>
+    button {
+      height: 150px;
+      width: 150px;
+      position: absolute;
+      background-color: orange;
+    }
+    </style>
+    </head>
+    <body>
+    
+    <a href="payhistory"><button>Refund or Edit ticket</button></a>
+    
+    </body>
+<!--
+<div> 
+    <form action="{{ url_for('home') }}" method="post" autocomplete="off">
+        <label for="test data!">
+            <i class="fas fa-user"></i>
+        </label>
+        <input type="text" name="integer" placeholder="Integer" id="integer" required>
+ 
+        <input type="submit" value="Write data!">
+    </form>
+</div>
+-->
+{% endblock %}
+
