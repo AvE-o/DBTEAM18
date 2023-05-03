@@ -97,7 +97,7 @@ body {
     width: 1000px;
     height: 100%;
 }
-.navtop div h1, .navtop div a {
+.navtop div h1, .navtop div a, .navtop div button {
     display: inline-flex;
     align-items: center;
 }
@@ -152,4 +152,11 @@ body.loggedin {
 .content > div p {
   padding: 5px;
   margin: 0 0 10px 0;
+}
+/* 将下拉菜单的格式和其他nav中的格式匹配 */
+.navtop div dropbtn {
+    padding: 0 20px;
+    text-decoration: none;
+    color: #c1c4c8;
+    font-weight: bold;
 }
