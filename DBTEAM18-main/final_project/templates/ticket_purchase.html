@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}ticket{% endblock %}
+
+{% block content %}
+<h2>Fill in information for ticket purchase</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    <div id="layer1">
+        <label for="Vdate">choose a date for visit:</label>
+        <input type="date" id="Vdate" name="Vdate">
+    </div>
+
+    <div id="layer2">
+        <input type="text" name="first name" placeholder="FirstN" id="fname" required>
+        <input type="text" name="last name" placeholder="LastN" id="lname" required>
+        <label for="dob">Date Of Birth:</label>
+        <input type="date" id="dob" name="dob">
+    </div>
+    
+    <div id="layer3">
+        <input type="text" name="city" placeholder="City" id="city" required>
+        <input type="text" name="zipcode" placeholder="Zipcode" id="zipcode" required>
+        <input type="text" name="street" placeholder="Street" id="street" required>
+        <input type="text" name="state" placeholder="State" id="state" required>
+    </div>
+
+    <div id="layer4">
+        <input type="number" name="phone number" placeholder="PhoneNum" id="phonenumber" required>
+        <input type="text" name="Visitor_email" placeholder="Visitor_email" id="Visitor_email" required>
+    </div>
+
+    <div id="layer5">
+        <select name="VisitorNum" id="VisitorNum" onchange="VNum()">
+            <option value="I">Individual</option>
+            <option value="G">Group</option>
+            <option value="S">Student</option>
+            <option value="M">Member</option>
+        </select>
+
+        <input type="number" name="Visitornumber" id="Visitornumber" style="display: none;" placeholder="Number of Visitor">
+        <input type="number" name="MemberID" id="MemberID" style="display: none;" placeholder="MemberID">
+
+        <script>
+            function VNum(){
+                var x = document.getElementById("VisitorNum").value;
+                if(x=="G"){
+                    document.getElementById("Visitornumber").style.display="block";
+                    document.getElementById("MemberID").style.display="none";
+                } else if(x=="M"){
+                    document.getElementById("Visitornumber").style.display="none";
+                    document.getElementById("MemberID").style.display="block";
+                }else {
+                    document.getElementById("Visitornumber").style.display="none";
+                    document.getElementById("MemberID").style.display="none";
+                }
+            }
+        </script>
+    </div>
+
+    <button type="submit" href="{{ url_for('purchase')}}">Submit</button>
+    <div class="msg">{{ msg }}</div>
+</form>
+
+
+{% endblock %}

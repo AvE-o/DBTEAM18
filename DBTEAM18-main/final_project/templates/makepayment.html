@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}ticket{% endblock %}
+
+{% block content %}
+<html>
+    <style>
+        form {
+          text-align: center;
+        }
+        input[type="text"] {
+          width: 300px;
+          height: 40px;
+          font-size: 20px;
+        }
+        input[type="date"] {
+        width: 300px;
+        height: 40px;
+        }
+
+        button[type="submit"] {
+        width: 300px;
+        height: 40px;
+        }
+      </style>
+
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('payment')}}">
+        <div id="layer1">
+            <label for="Your Name">Your Name</label><br>
+            <input type="text" name="first name" placeholder="FirstNname" id="fname" required><br>
+            <input type="text" name="last name" placeholder="LastNname" id="lname" required>
+        </div>
+
+        <input type="text" id="card-number" name="card-number" placeholder="card-number">
+
+        <select name="cardtype" id="cardtype">
+            <option value="C">Credit</option>
+            <option value="D">Debit</option>
+        </select><br>
+
+        <label for="CVV">CVV</label><br>
+        <input type="text" id="CVV" name="CVV"><br>
+
+        <label for="expdate">Date of Expir:</label><br>
+        <input type="date" id="expdate" name="expdate"><br>
+
+        <button type="submit">Pay</button>
+    </form>
+</html>
+{% endblock %}
