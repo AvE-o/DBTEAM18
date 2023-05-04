@@ -317,6 +317,19 @@ def testdb():
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
+# User datapage viewd by employees
+@app.route('/login/userdata', methods=['GET', 'POST'])
+def userdata():
+    if'loggedin' in session:
+        cursor = login_db.cursor(dictionary=True)
+        # account_type = 'employees'
+        cursor.execute('SELECT * FROM accounts WHERE account_type = "employees"')
+        data = cursor.fetchall()
+
+        return render_template('userdata.html', data = data)
+    
+    return redirect(url_for('login'))
+
 # Login function
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
