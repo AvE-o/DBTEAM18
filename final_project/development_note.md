@@ -26,7 +26,6 @@ TO-DO:
 
 Extra:
 - email notification
-<<<<<<< HEAD
 
 May 2:
 TODO:
@@ -39,5 +38,3 @@ TODO:
 6. All dates should be larger than current date
 7. Account show related info
 8. combine employee home and customer together, use if conditin to show the edit page of park information.
-=======
->>>>>>> b0ebe51 (feat:some change)
