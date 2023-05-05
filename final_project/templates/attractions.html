@@ -1,0 +1,14 @@
+{% extends 'empbase.html' %}
+
+{% block title %}Voyage Of Amusements{% endblock %}
+
+{% block content %}
+
+<h2>INSERT ATTRACTION TYPE FIRST</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="text" name="attraction_type" placeholder="Name" id="name" required>
+    <button type="submit" class="btn btn-primary btn-sm" >Submit</button>
+    <div class="msg">{{ msg }}</div>
+</form>
+{% endblock %}

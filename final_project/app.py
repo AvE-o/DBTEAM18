@@ -300,7 +300,17 @@ def emphome():
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
+@app.route('/login/attractions', methods=['GET', 'POST'])
+def attractions():
+    if 'loggedin' in session:
+        cursor = data_db.cursor(dictionary=True)
+        cursor.execute("INSERT INTO  VALUES ('{}',{})".format(name, int(number)))
+        login_db.commit()
+        msg = 'Data enter complete'
+        return render_template('attractions.html', msg = msg)
 
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
 # Test database function page
 @app.route('/login/testdb', methods=['GET', 'POST'])
 def testdb():
@@ -377,6 +387,7 @@ def login():
                     session['loggedin'] = True
                     session['id'] = account['id']
                     session['username'] = account['username']
+                    session['account_type'] = account['account_type']
                     return redirect(url_for('emphome'))
             else:
                 # If account doesnt exist or username/password incorrect
