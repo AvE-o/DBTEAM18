@@ -8,7 +8,26 @@
 
 <form method="POST" enctype="multipart/form-data">
     <input type="text" name="attraction_type" placeholder="Name" id="name" required>
-    <button type="submit" class="btn btn-primary btn-sm" >Submit</button>
+    <button type="submit" name="submit_button" value="type" class="btn btn-primary btn-sm" >Submit</button>
     <div class="msg">{{ msg }}</div>
 </form>
+
+<table>
+    <thead class="thead-light">
+        <tr>
+            <th>ID</th>
+            <th>TYPE</th>
+        </tr>
+    </thead> 
+    <tbody>
+        {% for row in data %}
+            <tr>
+                <td>{{row.attr_type_id}}</td>
+                <td>{{row.attr_type}}</td>
+                <td><a href="{{ url_for('delete_type', id =row.attr_type_id)}}">Delete</a></td>
+            </tr>
+        {% endfor %}
+    </tbody>  
+</table>
+
 {% endblock %}

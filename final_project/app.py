@@ -75,6 +75,13 @@ def get_remain_spot_by_date(visit_date):
         remain_spot_by_lot[i['lot']] = 400 - i['used']
     return remain_spot_by_lot
 
+# Try delete function
+@app.route('/delete/<int:id>')
+def delete_type(id):
+    data_cursor.execute('DELETE FROM attraction_type where attr_type_id = %s', (id,))
+    data_db.commit()
+    return redirect(url_for('attractions'))
+
 @app.route('/')
 def index():
     # redirect to login page
@@ -302,15 +309,26 @@ def emphome():
 
 @app.route('/login/attractions', methods=['GET', 'POST'])
 def attractions():
+    msg = ''
+    data = {}
     if 'loggedin' in session:
+        # enter attraction type
+        if request.method == 'POST':
+            if request.form['submit_button'] == "type":
+                attraction_type = request.form['attraction_type']
+                cursor = data_db.cursor(dictionary=True)
+                cursor.execute("INSERT INTO attraction_type VALUES (NULL,%s)", (attraction_type,))
+                data_db.commit()
+                msg = 'Type enter complete'
+
         cursor = data_db.cursor(dictionary=True)
-        cursor.execute("INSERT INTO  VALUES ('{}',{})".format(name, int(number)))
-        login_db.commit()
-        msg = 'Data enter complete'
-        return render_template('attractions.html', msg = msg)
+        cursor.execute("SELECT * FROM attraction_type")
+        data = cursor.fetchall()
+        return render_template('attractions.html', msg = msg, data = data)
 
     # If not, redirect to the login page
     return redirect(url_for('login'))
+
 # Test database function page
 @app.route('/login/testdb', methods=['GET', 'POST'])
 def testdb():
@@ -325,7 +343,7 @@ def testdb():
             cursor.execute("INSERT INTO testdb VALUES ('{}',{})".format(name, int(number)))
             login_db.commit()
             msg = 'Data enter complete'
-        
+
         # display data in DB
         cursor = login_db.cursor(dictionary=True)
         cursor.execute("SELECT * FROM testdb")
