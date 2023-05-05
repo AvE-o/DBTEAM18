@@ -75,12 +75,26 @@ def get_remain_spot_by_date(visit_date):
         remain_spot_by_lot[i['lot']] = 400 - i['used']
     return remain_spot_by_lot
 
-# Try delete function
+# Try delete function [attraction type]
 @app.route('/delete/<int:id>')
 def delete_type(id):
-    data_cursor.execute('DELETE FROM attraction_type where attr_type_id = %s', (id,))
-    data_db.commit()
-    return redirect(url_for('attractions'))
+    try:
+        data_cursor.execute('DELETE FROM attraction_type where attr_type_id = %s', (id,))
+        data_db.commit()
+        return redirect(url_for('attractions'))
+    except:
+        return redirect(url_for('attractions'))
+    
+# Try delete function [attraction]
+@app.route('/delete1/<int:id>')
+def delete_type1(id):
+    try:
+        data_cursor.execute('DELETE FROM attractions where attraction_id = %s', (id,))
+        data_db.commit()
+        return redirect(url_for('attractions'))
+    except:
+        return redirect(url_for('attractions'))
+    
 
 @app.route('/')
 def index():
@@ -311,6 +325,8 @@ def emphome():
 def attractions():
     msg = ''
     data = {}
+    attraction_data = {}
+
     if 'loggedin' in session:
         # enter attraction type
         if request.method == 'POST':
@@ -321,10 +337,34 @@ def attractions():
                 data_db.commit()
                 msg = 'Type enter complete'
 
+            elif request.form['submit_button'] == "attraction":
+                attraction_name = request.form['att_name']
+                description = request.form['description']
+                attraction_type1 = request.form['attraction_type1']
+                status = request.form['status']
+                capacity = request.form['capacity']
+                height = request.form['height']
+                duration = request.form['duration']
+                location = request.form['location']
+                cursor = data_db.cursor(dictionary=True)
+                cursor.execute("INSERT INTO attractions VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                               (attraction_name,description,attraction_type1,status,capacity,height,duration,location,))
+                data_db.commit()
+                msg = 'Attraction enter complete'
+
         cursor = data_db.cursor(dictionary=True)
         cursor.execute("SELECT * FROM attraction_type")
         data = cursor.fetchall()
-        return render_template('attractions.html', msg = msg, data = data)
+        #print(data)
+        cursor.close()
+
+        cursor = data_db.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM attractions")
+        attraction_data = cursor.fetchall()
+        #print(attraction_data)
+
+
+        return render_template('attractions.html', msg = msg, data = data, attraction_data = attraction_data)
 
     # If not, redirect to the login page
     return redirect(url_for('login'))
