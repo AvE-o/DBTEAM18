@@ -1,0 +1,23 @@
+{% extends 'empbase.html' %}
+
+{% block title %}Voyage Of Amusements{% endblock %}
+
+{% block content %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">USERNAME</th>
+            <th scope="col">EMAIL</th>
+        </tr>
+    </thead> 
+    <tbody>
+        {% for row in data %}
+            <tr> 
+                <td>{{row.username}}</td>
+                <td>{{row.email}}</td>
+            </tr>
+        {% endfor %}
+    </tbody>  
+</table>
+{% endblock %}
+

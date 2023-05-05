@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from datetime import date
+from flask import Flask, jsonify, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash #hash password & check 
 import mysql.connector
 import re 
@@ -49,23 +50,37 @@ def get_tickets_by_uid(uid):
 
 def get_ticket_by_vid(vid):
     try:
-        data_cursor.execute('SELECt * FROM tickets WHERE visitor_id = %s' % (vid))
+        data_cursor.execute('SELECT * FROM tickets WHERE visitor_id = %s' % (vid))
         ticket = data_cursor.fetchone()
         return ticket
+    except:
+        return redirect(url_for('tickets'))
+
+def get_date_by_vid(vid):
+    try:
+        data_cursor.execute('SELECT visit_date FROM visitors WHERE visitor_id = %s' % (vid))
+        date = data_cursor.fetchone()
+        return date["visit_date"]
     except:
         return redirect(url_for('tickets'))
     
 def get_remain_spot_by_date(visit_date):
     data_cursor.execute('SELECT lot, COUNT(*) as used FROM parking WHERE date(time_in) = "%s" GROUP BY lot' % convert_date_to_day(visit_date))
     used_spot_by_lot =  data_cursor.fetchall()
-    remain_spot_by_lot ={}
-    print(convert_date_to_day(visit_date))
     print(used_spot_by_lot)
+    remain_spot_by_lot ={}
     for i in ["lotA", "lotB", "lotC", "lotD"]:
         remain_spot_by_lot[i] = 400
     for i in used_spot_by_lot:
         remain_spot_by_lot[i['lot']] = 400 - i['used']
     return remain_spot_by_lot
+
+# Try delete function
+@app.route('/delete/<int:id>')
+def delete_type(id):
+    data_cursor.execute('DELETE FROM attraction_type where attr_type_id = %s', (id,))
+    data_db.commit()
+    return redirect(url_for('attractions'))
 
 @app.route('/')
 def index():
@@ -101,7 +116,6 @@ def payhistory():
     data = {}
     if 'loggedin' in session:
         uid = session['id']
-        cursor = data_db.cursor(dictionary=True)
         
         ## get of payment, here only shows up the ticket payment
         if request.method == 'GET':
@@ -113,40 +127,46 @@ def payhistory():
                     join payments on payments.payment_id = ticket_attractions.payment_id
                     where uid=%s
                 """
-            cursor.execute(mysql, (uid,))
-            data = cursor.fetchall()
+            data_cursor.execute(mysql, (uid,))
+            data = data_cursor.fetchall()
             return render_template('ticketPayment_history.html', data=data)
         elif request.method == 'POST':
             action = request.form['action']
 
             # handle change_date
             if action == 'change_date':
-                print("this is vdate")
                 vdate = request.form['Vdate']
                 mysql = 'update tickets set visit_date=%s'
-                cursor.execute(mysql, (vdate,))
+                data_cursor.execute(mysql, (vdate,))
                 data_db.commit()
             # handle refund
             else:
-                print("this is refund")
                 ticket_id = request.form['row_value']
                 #delete step by step
                 #ticket_attraction, card, payments, tickets
 
                 #first need to get information in ticket_attractions
                 mysql = 'select * from ticket_attractions where ticket_id=%s'
-                cursor.execute(mysql, (ticket_id,))
-                Intersect_value = cursor.fetchone()
-                paymentID = Intersect_value['payment_id']
+                data_cursor.execute(mysql, (ticket_id,))
+                Intersect_value = data_cursor.fetchall()
+                paymentID = Intersect_value[0]['payment_id']
 
                 cardsql = 'delete from card where payment_id=%s'
                 paymentsql = 'delete from payments where payment_id=%s'
                 sql = 'delete from ticket_attractions where payment_id=%s'
+                parkingsql = 'delete from parking where payment_id=%s'
                 ticketsql = 'delete from tickets where ticket_id=%s'
-                cursor.execute(cardsql, (paymentID,))
-                cursor.execute(sql, (paymentID,))
-                cursor.execute(paymentsql, (paymentID,))
-                cursor.execute(ticketsql, (ticket_id,))
+                showsql = 'delete from visitor_shows where payment_id=%s'
+                attractionsql = 'delete from ticket_attractions where ticket_id=%s'
+                itemsql = 'delete from item_orders where payment_id=%s'
+                data_cursor.execute(cardsql, (paymentID,))
+                data_cursor.execute(sql, (paymentID,))
+                data_cursor.execute(parkingsql, (paymentID,))
+                data_cursor.execute(itemsql, (paymentID,))
+                data_cursor.execute(showsql, (paymentID,))
+                data_cursor.execute(paymentsql, (paymentID,))
+                data_cursor.execute(attractionsql, (ticket_id,))
+                data_cursor.execute(ticketsql, (ticket_id,))
                 data_db.commit()
             
             mysql = """
@@ -157,8 +177,8 @@ def payhistory():
                 join payments on payments.payment_id = ticket_attractions.payment_id
                 where uid=%s
             """
-            cursor.execute(mysql, (uid,))
-            data = cursor.fetchall()
+            data_cursor.execute(mysql, (uid,))
+            data = data_cursor.fetchall()
 
             return render_template('ticketPayment_history.html', data=data)
         
@@ -168,7 +188,6 @@ def payhistory():
 # make a payment for ticket
 @app.route('/login/payment', methods=['GET', 'POST'])
 def payment():
-    cursor = data_db.cursor(dictionary=True)
     if 'loggedin' in session:
         if request.method == 'POST':
             Expirdate = request.form['expdate']
@@ -178,30 +197,30 @@ def payment():
             fname = request.form['first name']
             lname = request.form['last name']
 
-            cursor = data_db.cursor(dictionary=True)
+            data_cursor = data_db.cursor(dictionary=True)
             ticket_id = session['ticket_id']
             session.pop('ticket_id', None)
 
             # payment need to be resolved
-            cursor.execute('select * from tickets where ticket_id=%s',(ticket_id,))
-            ticket = cursor.fetchone()
+            data_cursor.execute('select * from tickets where ticket_id=%s',(ticket_id,))
+            ticket = data_cursor.fetchone()
             pay_amount = float(ticket['price']) * float(ticket['discount'])
 
             # online purchase can only be debit or credit card
             mysql = 'insert into payments (pay_method, pay_date, pay_amount) values (%s, %s, %s)'
             value = ('CD', date.today(), pay_amount)
-            cursor.execute(mysql, value)
-            payment_id = cursor.lastrowid
+            data_cursor.execute(mysql, value)
+            payment_id = data_cursor.lastrowid
 
             # then insert a card information
             mysql = 'insert into card (payment_id, fname, lname, card_num, cvv, expir_date, card_type) values (%s, %s, %s, %s, %s, %s, %s)'
             value = (payment_id, fname, lname, cardNum, cvv, Expirdate, cardtype)
-            cursor.execute(mysql, value)
+            data_cursor.execute(mysql, value)
 
             # finally connect payment to ticket by inserting into ticket_attractions
             mysql = 'insert into ticket_attractions (ticket_id, attraction_id, payment_id) values (%s, %s, %s)'
             value = (ticket_id, 1, payment_id)
-            cursor.execute(mysql, value)
+            data_cursor.execute(mysql, value)
             data_db.commit()
 
             return render_template('payment_popup.html')
@@ -235,25 +254,24 @@ def purchase():
 
             uid = session['id']     # new add user id for payment searching for user
             
-            cursor = data_db.cursor(dictionary=True)
-            cursor.execute("select * from visitors where emails=%s", (email,))
-            visitor = cursor.fetchone()
+            data_cursor.execute("select * from visitors where emails=%s", (email,))
+            visitor = data_cursor.fetchone()
             # don't have visitor need to create on first
             if not visitor:
                 # create visitor
                 # cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s)', (username, hashed_password, account_type, email,))
                 mysql = 'insert into visitors (v_fname, v_lname, city, zipcode, street, state, phone_number, dob, vt_type, visit_date, emails, member_id, uid) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
                 value = (fname, lname, city, zipcode, street, state, int(phone), dob, visType, Vdate, email, MemberID, uid,)
-                cursor.execute(mysql, value)
+                data_cursor.execute(mysql, value)
 
             # purchase ticket
-            cursor.execute('SELECT * FROM visitors WHERE emails = %s', (email,))
-            row = cursor.fetchone()
+            data_cursor.execute('SELECT * FROM visitors WHERE emails = %s', (email,))
+            row = data_cursor.fetchone()
             visitor_id = row['visitor_id']
 
             # one personal can only have one ticket
-            cursor.execute('SELECT * FROM tickets WHERE visitor_id = %s', (visitor_id,))
-            visitor_ticket = cursor.fetchone()
+            data_cursor.execute('SELECT * FROM tickets WHERE visitor_id = %s', (visitor_id,))
+            visitor_ticket = data_cursor.fetchone()
             if visitor_ticket:
                 # print("one can only buy one ticket")
                 msg = "One person can only own one ticket"
@@ -262,16 +280,16 @@ def purchase():
             # memeber have special discount
             if visType == "Member":
                 mysql = 'insert into tickets (ticket_method, p_date, visit_date, ticket_type, price, discount, visitor_id) values (%s, %s, %s, %s, %s, %s, %s)'
-                cursor.execute(mysql, ('online', date.today(), Vdate, 'Member', 200, 0.85,  visitor_id))
+                data_cursor.execute(mysql, ('online', date.today(), Vdate, 'Member', 200, 0.85,  visitor_id))
             else:
                 mysql = 'insert into tickets (ticket_method, p_date, visit_date, ticket_type, price, discount, visitor_id) values (%s, %s, %s, %s, %s, %s, %s)'
                 # need to solve age here for ticket type {adult, child, senior, member} -- sloved
-                cursor.execute(mysql, ('online', date.today(), Vdate, 'Child', 200, 0.81,  visitor_id))
+                data_cursor.execute(mysql, ('online', date.today(), Vdate, 'Child', 200, 0.81,  visitor_id))
             data_db.commit()
         
             # store ticket id for later use
-            cursor.execute('SELECT * FROM tickets WHERE visitor_id = %s', (visitor_id,))
-            tickets = cursor.fetchone()
+            data_cursor.execute('SELECT * FROM tickets WHERE visitor_id = %s', (visitor_id,))
+            tickets = data_cursor.fetchone()
             session['ticket_id']=tickets['ticket_id']
         
             return render_template('makepayment.html')
@@ -289,6 +307,27 @@ def emphome():
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
+@app.route('/login/attractions', methods=['GET', 'POST'])
+def attractions():
+    msg = ''
+    data = {}
+    if 'loggedin' in session:
+        # enter attraction type
+        if request.method == 'POST':
+            if request.form['submit_button'] == "type":
+                attraction_type = request.form['attraction_type']
+                cursor = data_db.cursor(dictionary=True)
+                cursor.execute("INSERT INTO attraction_type VALUES (NULL,%s)", (attraction_type,))
+                data_db.commit()
+                msg = 'Type enter complete'
+
+        cursor = data_db.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM attraction_type")
+        data = cursor.fetchall()
+        return render_template('attractions.html', msg = msg, data = data)
+
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
 
 # Test database function page
 @app.route('/login/testdb', methods=['GET', 'POST'])
@@ -304,7 +343,7 @@ def testdb():
             cursor.execute("INSERT INTO testdb VALUES ('{}',{})".format(name, int(number)))
             login_db.commit()
             msg = 'Data enter complete'
-        
+
         # display data in DB
         cursor = login_db.cursor(dictionary=True)
         cursor.execute("SELECT * FROM testdb")
@@ -313,6 +352,19 @@ def testdb():
         return render_template('testdb.html', msg = msg, data = data)
     
     # If not, redirect to the login page
+    return redirect(url_for('login'))
+
+# User datapage viewd by employees
+@app.route('/login/userdata', methods=['GET', 'POST'])
+def userdata():
+    if'loggedin' in session:
+        cursor = login_db.cursor(dictionary=True)
+        # account_type = 'employees'
+        cursor.execute('SELECT * FROM accounts WHERE account_type = "employees"')
+        data = cursor.fetchall()
+
+        return render_template('userdata.html', data = data)
+    
     return redirect(url_for('login'))
 
 # Login function
@@ -339,7 +391,6 @@ def login():
         if account:
             hashed_password = account['password']
             account_type = account['account_type']
-            print(hashed_password)
             if(check_password_hash(hashed_password, password)):
                 if(account_type == 'customers'):
                     # Create session data, this could be use in other routes
@@ -354,6 +405,7 @@ def login():
                     session['loggedin'] = True
                     session['id'] = account['id']
                     session['username'] = account['username']
+                    session['account_type'] = account['account_type']
                     return redirect(url_for('emphome'))
             else:
                 # If account doesnt exist or username/password incorrect
@@ -388,7 +440,6 @@ def register():
         password = request.form['password']
         email = request.form['email']
         account_type = request.form['account_type']
-        print(account_type)
 
         # Hashing password
         hashed_password = generate_password_hash(password)
@@ -421,7 +472,7 @@ def register():
 
 
 # user profile
-@app.route('/pythonlogin/profile')
+@app.route('/login/profile')
 def profile():
     # Check if user is loggedin
     if 'loggedin' in session:
@@ -434,35 +485,89 @@ def profile():
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
-# for get request, show all available parking slots by location, which including LotA, LotB, LotC, LotD and by time.  
-# for post request, pass the parking slot information and user information to the checkout page.
+
 @app.route('/parking', methods=['GET', 'POST'])
 def parking_spot():
     if 'loggedin' in session:
         #TODO: How to let customer book a parking lot? 
         #Step1: check if the cumstomer has a ticket:
-        #if no, redirect to the ticket page; if yes, for all visitor has a parking lot:
-        #if no, redirect to the parking_reserve page; if yes, show the parking lot information
+        #if no, redirect to the ticket page; if yes, redirect to the checkout page
+        #But filter the tickets with parking lot. 
+        #redirect to the checkout page with tickets that has parking lot. How to do that?
         tickets = get_tickets_by_uid(session['id'])
         if tickets:
-            data_cursor.execute('SELECT visitor_id as v_id, concat(v_fname, " ", v_lname) as v_name, DATE_FORMAT(visit_date, "%%Y-%%m-%%d") as visit_date, lot, spot_number FROM visitors natural join parking WHERE uid = %s' % (session['id']))
-            parking_order = data_cursor.fetchall()
-            remain_spot_by_lot = get_remain_spot_by_date(tickets[0]['visit_date']) # key: lot, value: remain spot. Example: {"lotA": 100, "lotB": 200, "lotC": 300, "lotD": 400} 
-            # Already has a parking lot
-            # popup a window to show the parking lot information
-            if not parking_order:
-                #TODO: show the parking order information
-                return render_template('parking_order.html', 
-                                       parking_order=parking_order, 
-                                       remain_spot_by_lot=remain_spot_by_lot, 
-                                       username=session['username'])
-            # No parking lot
+            query_visitor_without_parking = """
+            SELECT 
+                visitors.visitor_id as v_id, 
+                concat(v_fname, " ", v_lname) as v_name, 
+                visit_date, 
+                vt_type, 
+                uid
+            FROM visitors 
+            LEFT JOIN parking ON visitors.visitor_id = parking.visitor_id 
+            WHERE parking_id IS NULL and uid = %s;
+            """ % (session['id'])
+            data_cursor.execute(query_visitor_without_parking)
+            visitor_without_parking = data_cursor.fetchall()
+            # All visitor has a parking lot
+            if len(visitor_without_parking) == 0:
+                #TODO: pop up a message to tell customer that all visitors has a parking lot
+                return render_template('home.html')
             else:
                 #TODO: temperarily use the first ticket's visit date to get the remain spot by lot
-                return render_template('parking_reserve.html', remain_spot_by_lot=remain_spot_by_lot)
+                return render_template('checkout.html', 
+                                       tickets=visitor_without_parking, 
+                                       type='parking', 
+                                       price=19.99)
         # No ticket
         # TODO: modify this to ticket page from Simon
         return redirect(url_for('ticket'))
+
+
+@app.route('/get_remain_spots')
+def get_remain_spots():
+    v_id = request.args.get('v_id','')
+    visit_date = get_date_by_vid(v_id)
+    print(visit_date,v_id)
+    remain_spots = get_remain_spot_by_date(visit_date)
+    return jsonify(remain_spots)
+
+
+@app.route('/shows', methods=['GET', 'POST'])
+def shows():
+    if 'loggedin' in session:
+        #TODO: silimlar to reserve spot: get tickets by uid -> when ticket selected change change the available show
+        tickets = get_tickets_by_uid(session['id'])
+        if tickets:
+            query_visitor_without_parking = """
+            SELECT 
+                visitors.visitor_id as v_id, 
+                concat(v_fname, " ", v_lname) as v_name, 
+                visit_date, 
+                vt_type, 
+                uid
+            FROM visitors 
+            LEFT JOIN parking ON visitors.visitor_id = parking.visitor_id 
+            WHERE parking_id IS NULL and uid = %s;
+            """ % (session['id'])
+            data_cursor.execute(query_visitor_without_parking)
+            visitor_without_parking = data_cursor.fetchall()
+            # All visitor has a parking lot
+            if len(visitor_without_parking) == 0:
+                #TODO: pop up a message to tell customer that all visitors has a parking lot
+                return render_template('home.html')
+            else:
+                #TODO: temperarily use the first ticket's visit date to get the remain spot by lot
+                return render_template('checkout.html', 
+                                       tickets=visitor_without_parking, 
+                                       type='shows')
+        # No ticket
+        # TODO: modify this to ticket page from Simon
+        return redirect(url_for('ticket'))
+
+
+
+
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
@@ -483,7 +588,7 @@ def checkout():
                 price = 9.99
             else:
                 return redirect(url_for('home'))
-            return render_template('checkout.html', tickets=tickets, type=type, price=price)
+            return render_template('checkout.html', tickets=tickets, type=type, price=price, item=item)
         else:
             return redirect(url_for('tickets'))
     return redirect(url_for('login'))
@@ -502,7 +607,6 @@ def complete_payment():
         card_type = request.form.get('card_type')
         exp_date = request.form.get('exp_date')
         card_cvv = request.form.get('card_cvv')
-        print(card_type)
         if v_id:
             payment_id = add_payment(price, cardholder_name, card_number, card_type, exp_date, card_cvv)
             if checkout_type == "parking":

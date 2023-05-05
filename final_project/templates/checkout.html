@@ -6,32 +6,59 @@
 <form method="POST" enctype="multipart/form-data" action="{{ url_for('complete_payment') }}">
     <div class="form-group">
         <label for="ticket">Bind to tickets</label>
-        <select class="form-control" id="ticket" name="ticket">
+        <select class="form-control" id="ticket" name="ticket" onchange="updateLotOptions()">
             {% for row in tickets %}
                 <option value="{{row.v_id}}">{{row.v_name}}</option>
             {% endfor %}
         </select>
     </div>
+    <script>
+        const selectElement = document.getElementById('ticket');
+        function updateLotOptions() {
+            // 获取选中的ticket
+            const ticketSelect = document.querySelector('#ticket');
+            const selectedTicket = ticketSelect.options[ticketSelect.selectedIndex].value;
+            // 发送异步请求到后端，获取可选的lot
+            fetch(`/get_remain_spots?v_id=${selectedTicket}`)
+                .then(response => response.json())
+                .then(lots => {
+                    // 更新lot的options
+                    const lotSelect = document.querySelector('#lot');
+                    lotSelect.innerHTML = '';
+                    for (const [key, value] of Object.entries(lots)) {
+                        if (value == 0) {
+                            continue;
+                        }
+                        const option = document.createElement("option");
+                        option.value = key;
+                        option.text = `${key} - ${value} available spots`;
+                        lotSelect.add(option);
+                    }
+                });
+        }
+    </script>
     <div class="form-group">
         <label for="checkout_type">Checkout Type</label>
         <select class="form-control" id="checkout_type" name="checkout_type" value="{{type}}">
-            <option value="{{type}}">parking</option>
+            <option value="{{type}}" >{{type}}</option>
         </select>
     </div>
     {% if type == 'parking' %}
         <div class="form-group">
-            <label for="lot">Checkout Type</label>
+            <label for="lot">Park Location</label>
             <select class="form-control" id="lot" name="lot">
-                <option value="A" {% if item == "lotA" %}selected{% endif %}>lotA</option>
+                <!-- <option value="A" {% if item == "lotA" %}selected{% endif %}>lotA</option>
                 <option value="B" {% if item == "lotB" %}selected{% endif %}>lotB</option>
                 <option value="C" {% if item == "lotC" %}selected{% endif %}>lotC</option>
-                <option value="D" {% if item == "lotD" %}selected{% endif %}>lotD</option>
+                <option value="D" {% if item == "lotD" %}selected{% endif %}>lotD</option> -->
             </select>
         </div>
     {% elif type == 'show' %}
         <div class="form-group">
             <label for="show">Show Name</label>
-            <p class="form-control" id="show" name="show" disabled>{{item}}</p>
+            <select class="form-control" id="show" name="show">
+                
+            </select>
         </div>
     {% elif type == 'store' %}
         <div class="form-group">
