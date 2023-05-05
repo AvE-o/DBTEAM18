@@ -1,5 +1,5 @@
 from datetime import date
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, jsonify, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash #hash password & check 
 import mysql.connector
 import re 
@@ -50,15 +50,24 @@ def get_tickets_by_uid(uid):
 
 def get_ticket_by_vid(vid):
     try:
-        data_cursor.execute('SELECt * FROM tickets WHERE visitor_id = %s' % (vid))
+        data_cursor.execute('SELECT * FROM tickets WHERE visitor_id = %s' % (vid))
         ticket = data_cursor.fetchone()
         return ticket
+    except:
+        return redirect(url_for('tickets'))
+
+def get_date_by_vid(vid):
+    try:
+        data_cursor.execute('SELECT visit_date FROM visitors WHERE visitor_id = %s' % (vid))
+        date = data_cursor.fetchone()
+        return date["visit_date"]
     except:
         return redirect(url_for('tickets'))
     
 def get_remain_spot_by_date(visit_date):
     data_cursor.execute('SELECT lot, COUNT(*) as used FROM parking WHERE date(time_in) = "%s" GROUP BY lot' % convert_date_to_day(visit_date))
     used_spot_by_lot =  data_cursor.fetchall()
+    print(used_spot_by_lot)
     remain_spot_by_lot ={}
     for i in ["lotA", "lotB", "lotC", "lotD"]:
         remain_spot_by_lot[i] = 400
@@ -434,35 +443,89 @@ def profile():
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
-# for get request, show all available parking slots by location, which including LotA, LotB, LotC, LotD and by time.  
-# for post request, pass the parking slot information and user information to the checkout page.
+
 @app.route('/parking', methods=['GET', 'POST'])
 def parking_spot():
     if 'loggedin' in session:
         #TODO: How to let customer book a parking lot? 
         #Step1: check if the cumstomer has a ticket:
-        #if no, redirect to the ticket page; if yes, for all visitor has a parking lot:
-        #if no, redirect to the parking_reserve page; if yes, show the parking lot information
+        #if no, redirect to the ticket page; if yes, redirect to the checkout page
+        #But filter the tickets with parking lot. 
+        #redirect to the checkout page with tickets that has parking lot. How to do that?
         tickets = get_tickets_by_uid(session['id'])
         if tickets:
-            data_cursor.execute('SELECT visitor_id as v_id, concat(v_fname, " ", v_lname) as v_name, DATE_FORMAT(visit_date, "%%Y-%%m-%%d") as visit_date, lot, spot_number FROM visitors natural join parking WHERE uid = %s' % (session['id']))
-            parking_order = data_cursor.fetchall()
-            remain_spot_by_lot = get_remain_spot_by_date(tickets[0]['visit_date']) # key: lot, value: remain spot. Example: {"lotA": 100, "lotB": 200, "lotC": 300, "lotD": 400} 
-            # Already has a parking lot
-            # popup a window to show the parking lot information
-            if not parking_order:
-                #TODO: show the parking order information
-                return render_template('parking_order.html', 
-                                       parking_order=parking_order, 
-                                       remain_spot_by_lot=remain_spot_by_lot, 
-                                       username=session['username'])
-            # No parking lot
+            query_visitor_without_parking = """
+            SELECT 
+                visitors.visitor_id as v_id, 
+                concat(v_fname, " ", v_lname) as v_name, 
+                visit_date, 
+                vt_type, 
+                uid
+            FROM visitors 
+            LEFT JOIN parking ON visitors.visitor_id = parking.visitor_id 
+            WHERE parking_id IS NULL and uid = %s;
+            """ % (session['id'])
+            data_cursor.execute(query_visitor_without_parking)
+            visitor_without_parking = data_cursor.fetchall()
+            # All visitor has a parking lot
+            if len(visitor_without_parking) == 0:
+                #TODO: pop up a message to tell customer that all visitors has a parking lot
+                return render_template('home.html')
             else:
                 #TODO: temperarily use the first ticket's visit date to get the remain spot by lot
-                return render_template('parking_reserve.html', remain_spot_by_lot=remain_spot_by_lot)
+                return render_template('checkout.html', 
+                                       tickets=visitor_without_parking, 
+                                       type='parking', 
+                                       price=19.99)
         # No ticket
         # TODO: modify this to ticket page from Simon
         return redirect(url_for('ticket'))
+
+
+@app.route('/get_remain_spots')
+def get_remain_spots():
+    v_id = request.args.get('v_id','')
+    visit_date = get_date_by_vid(v_id)
+    print(visit_date,v_id)
+    remain_spots = get_remain_spot_by_date(visit_date)
+    return jsonify(remain_spots)
+
+
+@app.route('/shows', methods=['GET', 'POST'])
+def shows():
+    if 'loggedin' in session:
+        #TODO: silimlar to reserve spot: get tickets by uid -> when ticket selected change change the available show
+        tickets = get_tickets_by_uid(session['id'])
+        if tickets:
+            query_visitor_without_parking = """
+            SELECT 
+                visitors.visitor_id as v_id, 
+                concat(v_fname, " ", v_lname) as v_name, 
+                visit_date, 
+                vt_type, 
+                uid
+            FROM visitors 
+            LEFT JOIN parking ON visitors.visitor_id = parking.visitor_id 
+            WHERE parking_id IS NULL and uid = %s;
+            """ % (session['id'])
+            data_cursor.execute(query_visitor_without_parking)
+            visitor_without_parking = data_cursor.fetchall()
+            # All visitor has a parking lot
+            if len(visitor_without_parking) == 0:
+                #TODO: pop up a message to tell customer that all visitors has a parking lot
+                return render_template('home.html')
+            else:
+                #TODO: temperarily use the first ticket's visit date to get the remain spot by lot
+                return render_template('checkout.html', 
+                                       tickets=visitor_without_parking, 
+                                       type='shows')
+        # No ticket
+        # TODO: modify this to ticket page from Simon
+        return redirect(url_for('ticket'))
+
+
+
+
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
