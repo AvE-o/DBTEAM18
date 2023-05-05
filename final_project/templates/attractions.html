@@ -5,29 +5,89 @@
 {% block content %}
 
 <h2>INSERT ATTRACTION TYPE FIRST</h2>
+<div class="msg">{{ msg }}</div>
 
-<form method="POST" enctype="multipart/form-data">
-    <input type="text" name="attraction_type" placeholder="Name" id="name" required>
-    <button type="submit" name="submit_button" value="type" class="btn btn-primary btn-sm" >Submit</button>
-    <div class="msg">{{ msg }}</div>
-</form>
+<div>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="text" name="attraction_type" placeholder="Attraction Type" id="name" required>
+        <button type="submit" name="submit_button" value="type" class="btn btn-primary btn-sm" >Submit</button>
+    </form>
 
-<table>
-    <thead class="thead-light">
-        <tr>
-            <th>ID</th>
-            <th>TYPE</th>
-        </tr>
-    </thead> 
-    <tbody>
-        {% for row in data %}
+    <table>
+        <thead class="thead-light">
             <tr>
-                <td>{{row.attr_type_id}}</td>
-                <td>{{row.attr_type}}</td>
-                <td><a href="{{ url_for('delete_type', id =row.attr_type_id)}}">Delete</a></td>
+                <th>ID</th>
+                <th>TYPE</th>
             </tr>
-        {% endfor %}
-    </tbody>  
-</table>
+        </thead> 
+        <tbody>
+            {% for row in data %}
+                <tr>
+                    <td>{{row.attr_type_id}}</td>
+                    <td>{{row.attr_type}}</td>
+                    <td><a href="{{ url_for('delete_type', id =row.attr_type_id)}}">Delete</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>  
+    </table>
+</div>
 
+<h2>INSERT ATTRACTION HERE</h2>
+
+<div>
+    <form method="POST" enctype="multipart/form-data">
+        <label>Attraction Name</label><br>
+        <input type="text" name="att_name" id="name" required><br>
+
+        <label>Description</label><br>
+        <input type="text" style="width: 300px;" name="description" id="name" required><br>
+        
+        <label>Attraction Type</label><br>
+        <select name = "attraction_type1" class="custom-select" id="inputGroupSelect01">
+            {% for row in data %}
+                <option value={{row.attr_type_id}}>{{row.attr_type}}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>Status</label><br>
+        <input type="text" name="status" id="name" required><br>
+
+        <label>Capacity</label><br>
+        <input type="text" name="capacity" id="name" required><br>
+
+        <label>Min_Height</label><br>
+        <input type="text" name="height" id="name" required><br>
+
+        <label>Duration</label><br>
+        <input type="text" name="duration" id="name" required><br>
+
+        <label>Location_sec</label><br>
+        <input type="text" name="location" id="name" required><br>
+
+        <br>
+        <button type="submit" name="submit_button" value="attraction" class="btn btn-primary btn-sm" >Submit</button>
+    </form>
+
+    <table>
+        <thead class="thead-light">
+            <tr>
+                <th>ID</th>
+                <th>Attraction</th>
+                <th>Description</th>
+            </tr>
+        </thead> 
+        <tbody>
+            {% for row in attraction_data %}
+                <tr>
+                    <td>{{row.attraction_id}}</td>
+                    <td>{{row.att_name}}</td>
+                    <td>{{row.description}}</td>
+                    <td><a href="{{ url_for('delete_type1', id =row.attraction_id)}}">Delete</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>  
+    </table>
+
+
+</div>
 {% endblock %}
