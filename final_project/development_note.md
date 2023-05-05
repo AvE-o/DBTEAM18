@@ -17,6 +17,8 @@ Apr 21:
 - password hash
 - register function adding user type
 
+Apr 25:
+- employee page
 
 TO-DO:
 - Think what function need to be implement
