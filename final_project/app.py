@@ -105,6 +105,16 @@ def delete_type1(id):
     except:
         return redirect(url_for('attractions'))
     
+# Try delete function [attraction]
+@app.route('/delete2/<int:id>')
+def delete_type2(id):
+    try:
+        data_cursor.execute('DELETE FROM shows where show_id = %s', (id,))
+        data_db.commit()
+        return redirect(url_for('ashows'))
+    except:
+        return redirect(url_for('ashows'))
+    
 
 @app.route('/')
 def index():
@@ -353,7 +363,7 @@ def purchase():
         return render_template('ticket_purchase.html')
     return redirect(url_for('login'))
 
-
+# employee home page
 @app.route('/login/emphome', methods=['GET', 'POST'])
 def emphome():
     if 'loggedin' in session:
@@ -362,6 +372,7 @@ def emphome():
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
+# add & delete attraction
 @app.route('/login/attractions', methods=['GET', 'POST'])
 def attractions():
     msg = ''
@@ -410,6 +421,35 @@ def attractions():
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
+
+@app.route('/login/show', methods=['GET', 'POST'])
+def ashows():
+    msg = ''
+    data = {}
+    if 'loggedin' in session:
+        if request.method == 'POST':
+            show_name = request.form['show_name']
+            show_type = request.form['show_type']
+            show_start = request.form['show_start']
+            show_end = request.form['show_end']
+            show_wheelchair = request.form['show_wheelchair']
+            show_price = request.form['show_price']
+            show_description = request.form['show_description']
+            cursor = data_db.cursor(dictionary=True)
+            cursor.execute("INSERT INTO shows VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)", 
+                               (show_name,show_type,show_start,show_end,show_wheelchair,show_price,show_description,))
+            data_db.commit()
+            msg = 'Show enter complete'
+        
+        cursor = data_db.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM shows")
+        data = cursor.fetchall()
+
+        return render_template('shows.html', msg = msg, data = data)
+    
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
+
 # Test database function page
 @app.route('/login/testdb', methods=['GET', 'POST'])
 def testdb():
@@ -441,7 +481,7 @@ def userdata():
     if'loggedin' in session:
         cursor = login_db.cursor(dictionary=True)
         # account_type = 'employees'
-        cursor.execute('SELECT * FROM accounts WHERE account_type = "employees"')
+        cursor.execute('SELECT * FROM accounts')
         data = cursor.fetchall()
 
         return render_template('userdata.html', data = data)

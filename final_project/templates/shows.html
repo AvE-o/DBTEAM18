@@ -1,0 +1,61 @@
+{% extends 'empbase.html' %}
+
+{% block title %}Voyage Of Amusements{% endblock %}
+
+{% block content %}
+<h2>INSERT SHOWS HERE</h2>
+<div class="msg">{{ msg }}</div>
+
+<div>
+    <form method="POST" enctype="multipart/form-data">
+        <label>Show Name</label><br>
+        <input type="text" name="show_name" id="name" required><br>
+
+        <label>Show type</label><br>
+        <input type="text" name="show_type" id="name" required><br>
+
+        <label>Show Start Time</label><br>
+        <input type="datetime-local" id="meeting-time"
+        name="show_start" value="2023-04-12T19:30"><br>
+        
+        <label>Show End Time</label><br>
+        <input type="datetime-local" id="meeting-time"
+        name="show_end" value="2023-04-12T19:30"><br>
+
+        <label>Wheelchair_acc</label><br>
+        <select name="show_wheelchair" id="cars">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select><br>
+
+        <label>Price</label><br>
+        <input type="text" name="show_price" id="name" required><br>
+
+        <label>Description</label><br>
+        <input type="text" style="width: 300px;" name="show_description" id="name" required><br>
+
+        <br>
+        <button type="submit" name="submit_button" class="btn btn-primary btn-sm" >Submit</button>
+    </form>
+
+    <table>
+        <thead class="thead-light">
+            <tr>
+                <th>ID</th>
+                <th>Show</th>
+            </tr>
+        </thead> 
+        <tbody>
+            {% for row in data %}
+                <tr>
+                    <td>{{row.show_id}}</td>
+                    <td>{{row.show_name}}</td>
+                    <td><a href="{{ url_for('delete_type2', id =row.show_id)}}">Delete</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>  
+    </table>
+
+
+</div>
+{% endblock %}
