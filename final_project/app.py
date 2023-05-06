@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from flask import Flask, jsonify, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash #hash password & check 
 import mysql.connector
@@ -241,7 +241,11 @@ def ticket_history():
 def payment():
     if 'loggedin' in session:
         if request.method == 'POST':
-            Expirdate = request.form['expdate']
+            # Expirdate = request.form['expdate']
+            Expyear = request.form['year']
+            ExpMon = request.form['month']
+            date_string = '20'+Expyear+'-'+ExpMon
+            Expdate = datetime.strptime(date_string, '%Y-%m').date()
             cardNum = request.form['card-number']
             cardtype = request.form.get('cardtype')
             cvv = request.form['CVV']
@@ -265,7 +269,7 @@ def payment():
 
             # then insert a card information
             mysql = 'insert into card (payment_id, fname, lname, card_num, cvv, expir_date, card_type) values (%s, %s, %s, %s, %s, %s, %s)'
-            value = (payment_id, fname, lname, cardNum, cvv, Expirdate, cardtype)
+            value = (payment_id, fname, lname, cardNum, cvv, Expdate, cardtype)
             data_cursor.execute(mysql, value)
 
             # finally connect payment to ticket by inserting into ticket_attractions
