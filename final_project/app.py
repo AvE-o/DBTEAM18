@@ -34,15 +34,11 @@ data_db = mysql.connector.connect(
 )
 data_cursor = data_db.cursor(dictionary=True)
 
-# cursor = mydb.cursor()
-# print(mydb)
-# Intialize MySQL
-# mysql = MySQL(app)
 
 
 def get_tickets_by_uid(uid):
     try:
-        data_cursor.execute('SELECT visitor_id as v_id, concat(v_fname, " ", v_lname) as v_name, visit_date, vt_type, ticket_id, ticket_type FROM visitors natural join tickets WHERE uid = %s' % (uid))
+        data_cursor.execute('SELECT visitor_id as v_id, concat(v_fname, " ", v_lname) as v_name, date(visit_date) as visit_date, vt_type, ticket_id, ticket_type FROM visitors natural join tickets WHERE uid = %s' % (uid))
         tickets = data_cursor.fetchall()
         return tickets
     except:
@@ -65,15 +61,29 @@ def get_date_by_vid(vid):
         return redirect(url_for('tickets'))
     
 def get_remain_spot_by_date(visit_date):
-    data_cursor.execute('SELECT lot, COUNT(*) as used FROM parking WHERE date(time_in) = "%s" GROUP BY lot' % convert_date_to_day(visit_date))
+    data_cursor.execute('SELECT lot, COUNT(*) as used FROM parking WHERE date(time_in) = "%s" GROUP BY lot' % visit_date)
     used_spot_by_lot =  data_cursor.fetchall()
-    print(used_spot_by_lot)
     remain_spot_by_lot ={}
     for i in ["lotA", "lotB", "lotC", "lotD"]:
         remain_spot_by_lot[i] = 400
     for i in used_spot_by_lot:
         remain_spot_by_lot[i['lot']] = 400 - i['used']
     return remain_spot_by_lot
+
+def get_available_shows_by_date(visit_date):
+    data_cursor.execute('SELECT show_id, show_name FROM shows WHERE s_time = "%s"' % visit_date)
+    shows =  data_cursor.fetchall()
+    return shows
+
+def cancel_parking(payment_id):
+    data_cursor.execute('delete from parking where payment_id=%s' % payment_id)
+    data_cursor.execute('delete from payments where payment_id=%s' % payment_id)
+    data_db.commit()
+
+def cancel_show(payment_id):
+    data_cursor.execute('delete from visitor_shows where payment_id=%s' % payment_id)
+    data_cursor.execute('delete from payments where payment_id=%s' % payment_id)
+    data_db.commit()
 
 # Try delete function [attraction type]
 @app.route('/delete/<int:id>')
@@ -122,10 +132,10 @@ def home():
     return redirect(url_for('login'))
 
 
-# see all payment history and allow edit or refund
+# see all ticket history and allow edit or refund
 # now can handle edit or refund, maybe need to seperate from this route
 @app.route('/login/payhistory', methods=['GET', 'POST'])
-def payhistory():
+def ticket_history():
     # Check user login status
     data = {}
     if 'loggedin' in session:
@@ -133,7 +143,7 @@ def payhistory():
         
         ## get of payment, here only shows up the ticket payment
         if request.method == 'GET':
-            mysql = """
+            query_tickets = """
                     select * 
                     from visitors join
                     tickets on visitors.visitor_id = tickets.visitor_id
@@ -141,10 +151,33 @@ def payhistory():
                     join payments on payments.payment_id = ticket_attractions.payment_id
                     where uid=%s
                 """
-            data_cursor.execute(mysql, (uid,))
-            data = data_cursor.fetchall()
-            return render_template('ticketPayment_history.html', data=data)
+            data_cursor.execute(query_tickets, (uid,))
+            tickets = data_cursor.fetchall()
+
+            query_parking = """
+                    select * 
+                    from visitors join
+                    parking on visitors.visitor_id = parking.visitor_id
+                    where uid=%s
+                """
+            data_cursor.execute(query_parking, (uid,))
+            parking = data_cursor.fetchall()
+
+            query_shows = """
+                    select *
+                    from visitors join
+                    visitor_shows on visitors.visitor_id = visitor_shows.visitor_id
+                    join shows on shows.show_id = visitor_shows.show_id
+                    where uid=%s
+                    """
+            data_cursor.execute(query_shows, (uid,))
+            shows = data_cursor.fetchall()
+            return render_template('ticket_history.html',
+                                   tickets=tickets,
+                                   parking=parking,
+                                   shows=shows)
         elif request.method == 'POST':
+            print(request.form)
             action = request.form['action']
 
             # handle change_date
@@ -154,6 +187,10 @@ def payhistory():
                 data_cursor.execute(mysql, (vdate,))
                 data_db.commit()
             # handle refund
+            elif action == 'cancel_parking':
+                cancel_parking(request.form['parking_payment_id'])
+            elif action == 'cancel_show':
+                cancel_show(request.form['show_payment_id'])
             else:
                 ticket_id = request.form['row_value']
                 #delete step by step
@@ -540,7 +577,7 @@ def parking_spot():
             SELECT 
                 visitors.visitor_id as v_id, 
                 concat(v_fname, " ", v_lname) as v_name, 
-                visit_date, 
+                date(visit_date) as visit_date, 
                 vt_type, 
                 uid
             FROM visitors 
@@ -560,15 +597,13 @@ def parking_spot():
                                        type='parking', 
                                        price=19.99)
         # No ticket
-        # TODO: modify this to ticket page from Simon
-        return redirect(url_for('ticket'))
+        return redirect(url_for('purchase'))
 
 
 @app.route('/get_remain_spots')
 def get_remain_spots():
     v_id = request.args.get('v_id','')
     visit_date = get_date_by_vid(v_id)
-    print(visit_date,v_id)
     remain_spots = get_remain_spot_by_date(visit_date)
     return jsonify(remain_spots)
 
@@ -579,34 +614,20 @@ def shows():
         #TODO: silimlar to reserve spot: get tickets by uid -> when ticket selected change change the available show
         tickets = get_tickets_by_uid(session['id'])
         if tickets:
-            query_visitor_without_parking = """
-            SELECT 
-                visitors.visitor_id as v_id, 
-                concat(v_fname, " ", v_lname) as v_name, 
-                visit_date, 
-                vt_type, 
-                uid
-            FROM visitors 
-            LEFT JOIN parking ON visitors.visitor_id = parking.visitor_id 
-            WHERE parking_id IS NULL and uid = %s;
-            """ % (session['id'])
-            data_cursor.execute(query_visitor_without_parking)
-            visitor_without_parking = data_cursor.fetchall()
-            # All visitor has a parking lot
-            if len(visitor_without_parking) == 0:
-                #TODO: pop up a message to tell customer that all visitors has a parking lot
-                return render_template('home.html')
-            else:
-                #TODO: temperarily use the first ticket's visit date to get the remain spot by lot
-                return render_template('checkout.html', 
-                                       tickets=visitor_without_parking, 
-                                       type='shows')
+            return render_template('checkout.html', 
+                                    tickets=tickets, 
+                                    type='shows')
         # No ticket
         # TODO: modify this to ticket page from Simon
-        return redirect(url_for('ticket'))
+        return redirect(url_for('purchase'))
 
 
-
+@app.route('/get_available_shows')
+def get_available_shows():
+    v_id = request.args.get('v_id','')
+    visit_date = get_date_by_vid(v_id)
+    available_shows = get_available_shows_by_date(visit_date)
+    return jsonify(available_shows)
 
 
 @app.route('/checkout', methods=['GET', 'POST'])
@@ -639,7 +660,7 @@ def complete_payment():
         v_id = request.form.get('ticket')
         checkout_type = request.form.get('checkout_type')
         lot = request.form.get('lot')
-        show = request.form.get('show')
+        show_id = request.form.get('show')
         item = request.form.get('item')
         price = request.form.get('price')
         cardholder_name = request.form.get('cardholder_name')
@@ -651,14 +672,16 @@ def complete_payment():
             payment_id = add_payment(price, cardholder_name, card_number, card_type, exp_date, card_cvv)
             if checkout_type == "parking":
                 add_parking(v_id, lot, price, payment_id)
-            # elif checkout_type == "show":
-            #     add_show(v_id, show, price)
+            elif checkout_type == "shows":
+                add_visitor_shows(v_id, show_id, price)
             # elif checkout_type == "store":
             #     add_item(v_id, item, price)
             #redirect to the user payment history page
-            return redirect(url_for('profile'))
+            return render_template('payment_popup.html')
     # If not, redirect to the login page
     return redirect(url_for('login'))
+
+
 
 def add_payment(price, cardholder_name, card_number, card_type, exp_date, card_cvv):
     #First: add payment information to the payment table
@@ -676,7 +699,7 @@ def add_payment(price, cardholder_name, card_number, card_type, exp_date, card_c
 def add_parking(v_id, lot, price, payment_id):
     visit_date = get_ticket_by_vid(v_id)['visit_date']
     available_spots = [0] * 400
-    data_cursor.execute('SELECT * FROM parking WHERE date(time_in) = %s and lot = "%s"' % (convert_date_to_day(visit_date), "lot"+lot))
+    data_cursor.execute('SELECT * FROM parking WHERE date(time_in) = %s and lot = "%s"' % (visit_date, "lot"+lot))
     used_spots = data_cursor.fetchall()
     for spot in used_spots:
         available_spots[spot['spot_number']] = 1
@@ -686,6 +709,10 @@ def add_parking(v_id, lot, price, payment_id):
             spot = i
             break
     data_cursor.execute('INSERT INTO parking (visitor_id, lot, spot_number, time_in, time_out, fee, payment_id) VALUES (%s, "%s", %s, %s, DATE_ADD(%s, INTERVAL 1 DAY), %s, %s)' % (v_id, lot, spot,visit_date, visit_date, price, payment_id))
+    data_db.commit()
+
+def add_visitor_shows(v_id, show_id, payment_id):
+    data_cursor.execute('INSERT INTO visitor_shows (visitor_id, show_id, payment_id) VALUES (%s,  %s, %s, )' % (v_id, show_id, payment_id))
     data_db.commit()
 
 

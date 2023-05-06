@@ -6,35 +6,54 @@
 <form method="POST" enctype="multipart/form-data" action="{{ url_for('complete_payment') }}">
     <div class="form-group">
         <label for="ticket">Bind to tickets</label>
-        <select class="form-control" id="ticket" name="ticket" onchange="updateLotOptions()">
+        <select class="form-control" id="ticket" name="ticket" onchange="updateOptions()">
             {% for row in tickets %}
-                <option value="{{row.v_id}}">{{row.v_name}}</option>
+                <option value="{{row.v_id}}">{{row.v_name}} ({{row.visit_date}})</option>
             {% endfor %}
         </select>
     </div>
     <script>
-        const selectElement = document.getElementById('ticket');
-        function updateLotOptions() {
+        function updateOptions() {
             // 获取选中的ticket
             const ticketSelect = document.querySelector('#ticket');
+            const typeSelect = document.querySelector('#checkout_type');
+            
             const selectedTicket = ticketSelect.options[ticketSelect.selectedIndex].value;
+            const checkout_type = typeSelect.options[typeSelect.selectedIndex].value;
+            console.log(checkout_type)
             // 发送异步请求到后端，获取可选的lot
-            fetch(`/get_remain_spots?v_id=${selectedTicket}`)
-                .then(response => response.json())
-                .then(lots => {
-                    // 更新lot的options
-                    const lotSelect = document.querySelector('#lot');
-                    lotSelect.innerHTML = '';
-                    for (const [key, value] of Object.entries(lots)) {
-                        if (value == 0) {
-                            continue;
+            if (checkout_type == 'parking') {
+                fetch(`/get_remain_spots?v_id=${selectedTicket}`)
+                    .then(response => response.json())
+                    .then(lots => {
+                        // 更新lot的options
+                        const lotSelect = document.querySelector('#lot');
+                        lotSelect.innerHTML = '';
+                        for (const [key, value] of Object.entries(lots)) {
+                            if (value == 0) {
+                                continue;
+                            }
+                            const option = document.createElement("option");
+                            option.value = key;
+                            option.text = `${key} - ${value} available spots`;
+                            lotSelect.add(option);
                         }
-                        const option = document.createElement("option");
-                        option.value = key;
-                        option.text = `${key} - ${value} available spots`;
-                        lotSelect.add(option);
-                    }
-                });
+                    });
+            }
+            else if (checkout_type == 'shows') {
+                fetch(`/get_available_shows?v_id=${selectedTicket}`)
+                    .then(response => response.json())
+                    .then(shows => {
+                        const showSelect = document.querySelector('#show');
+                        showSelect.innerHTML = '';
+                        for (const show of Object.entries(shows)) {
+                            const option = document.createElement("option");
+                            option.value = show.show_id;
+                            option.text = `${show.show_name}`;
+                            showSelect.add(option);
+                        }
+                    });
+            }
         }
     </script>
     <div class="form-group">
@@ -53,11 +72,10 @@
                 <option value="D" {% if item == "lotD" %}selected{% endif %}>lotD</option> -->
             </select>
         </div>
-    {% elif type == 'show' %}
+    {% elif type == 'shows' %}
         <div class="form-group">
             <label for="show">Show Name</label>
             <select class="form-control" id="show" name="show">
-                
             </select>
         </div>
     {% elif type == 'store' %}
