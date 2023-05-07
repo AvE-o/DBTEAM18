@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from flask import Flask, jsonify, render_template, request, redirect, url_for, session
+from flask import Flask, flash, jsonify, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash #hash password & check 
 import mysql.connector
 import re 
@@ -130,13 +130,13 @@ def home():
         attractions = data_cursor.fetchall()
         data_cursor.execute("SELECT * FROM shows")
         shows = data_cursor.fetchall()
-        data_cursor.execute("SELECT * FROM store")
-        stores = data_cursor.fetchall()
+        data_cursor.execute("SELECT * FROM menu_items")
+        items = data_cursor.fetchall()
         return render_template('home.html',
                                 username=session['username'],
                                 attractions = attractions, 
                                 shows = shows, 
-                                stores = stores)
+                                items = items)
 
     # If not, redirect to the login page
     return redirect(url_for('login'))
@@ -633,9 +633,9 @@ def parking_spot():
             # All visitor has a parking lot
             if len(visitor_without_parking) == 0:
                 #TODO: pop up a message to tell customer that all visitors has a parking lot
+                #flash('All visitors has a parking lot')
                 return render_template('home.html')
             else:
-                #TODO: temperarily use the first ticket's visit date to get the remain spot by lot
                 return render_template('checkout.html', 
                                        tickets=visitor_without_parking, 
                                        type='parking', 

@@ -74,5 +74,27 @@
         </a>
     </h2>
 </div>
+
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Price</th>                
+            </tr>
+        </thead> 
+        <tbody>
+            {% for row in items %}
+                <tr>
+                    <td>{{row.item_name}}</td>
+                    <td>{{row.unit_price}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>   
+    </table>
+    <p> 
+        NOTE: In-store purchases only.
+    </p>
+</div>
 {% endblock %}
 

@@ -31,7 +31,7 @@
             <input type="text" name="last name" placeholder="LastNname" id="lname" required>
         </div>
 
-        <input type="text" id="card-number" name="card-number" placeholder="card-number">
+        <input type="text" id="card-number" name="card-number" placeholder="card-number" pattern="[0-9]{16}" required>
 
         <select name="cardtype" id="cardtype">
             <option value="C">Credit</option>
@@ -39,7 +39,7 @@
         </select><br>
 
         <label for="CVV">CVV</label><br>
-        <input type="text" id="CVV" name="CVV"><br>
+        <input type="text" id="CVV" name="CVV" pattern="^[0-9]{3, 4}$" required><br>
 
         <label for="expdate">Date of Expir:</label><br>
         <input type='text' id='year' name="year" maxlength="2" placeholder="Year">

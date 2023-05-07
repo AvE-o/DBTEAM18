@@ -94,7 +94,7 @@
     </div>
     <div class="form-group">
         <label for="card_number">Card Number</label>
-        <input type="text" class="form-control" id="card_number" name="card_number" placeholder="Enter card number" required>
+        <input type="text" class="form-control" id="card_number" name="card_number" placeholder="Enter card number" pattern="[0-9]{16}" required>
     </div>
     <div class="form-group">
         <label for="card_type">Card Type</label>
@@ -105,12 +105,12 @@
     </div>
     <div class="form-group">
         <label for="exp_date">Expired Date</label>
-        <input type="text" class="form-control" id="exp_date" name="exp_date" placeholder="Enter card Expired Date (MM/YY)" required>
+        <input type="text" class="form-control" id="exp_date" name="exp_date" placeholder="Enter card Expired Date (MM/YY)" pattern="^(0[1-9]|1[0-2])\/?([0-9]{2})$" required>
     </div>
     
     <div class="form-group">
         <label for="card_cvv">Card CVV</label>
-        <input type="text" class="form-control" id="card_cvv" name="card_cvv" placeholder="Enter card CVV" required>
+        <input type="text" class="form-control" id="card_cvv" name="card_cvv" placeholder="Enter card CVV" pattern="^[0-9]{3, 4}$" required>
     </div>
     <div class="form-group">
         <div class="mx-auto">
