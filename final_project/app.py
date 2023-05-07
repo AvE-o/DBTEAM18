@@ -35,14 +35,21 @@ data_db = mysql.connector.connect(
 data_cursor = data_db.cursor(dictionary=True)
 
 
-
+## change
+## for all helper function, I change the except url_for tickets --> purchase
 def get_tickets_by_uid(uid):
     try:
-        data_cursor.execute('SELECT visitor_id as v_id, concat(v_fname, " ", v_lname) as v_name, date(visit_date) as visit_date, vt_type, ticket_id, ticket_type FROM visitors natural join tickets WHERE uid = %s' % (uid))
+        mysql =  """
+                    SELECT visitors.visitor_id as v_id, concat(v_fname, " ", v_lname) as v_name, 
+                    date(visitors.visit_date) as visit_date, vt_type, ticket_id, ticket_type 
+                    FROM 
+                    visitors left join tickets on visitors.visitor_id = tickets.visitor_id WHERE uid=%s;
+                """
+        data_cursor.execute(mysql, (uid,))
         tickets = data_cursor.fetchall()
         return tickets
     except:
-        return redirect(url_for('tickets'))
+        return redirect(url_for('purchase'))
 
 def get_ticket_by_vid(vid):
     try:
@@ -50,7 +57,7 @@ def get_ticket_by_vid(vid):
         ticket = data_cursor.fetchone()
         return ticket
     except:
-        return redirect(url_for('tickets'))
+        return redirect(url_for('purchase'))
 
 def get_date_by_vid(vid):
     try:
@@ -58,7 +65,7 @@ def get_date_by_vid(vid):
         date = data_cursor.fetchone()
         return date["visit_date"]
     except:
-        return redirect(url_for('tickets'))
+        return redirect(url_for('purchase'))
     
 def get_remain_spot_by_date(visit_date):
     data_cursor.execute('SELECT lot, COUNT(*) as used FROM parking WHERE date(time_in) = "%s" GROUP BY lot' % visit_date)
