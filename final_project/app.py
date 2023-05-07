@@ -4,11 +4,21 @@ from werkzeug.security import generate_password_hash, check_password_hash #hash 
 import mysql.connector
 import re 
 from utils import convert_date_to_day, convert_exp_date_to_sql_date
+from flask_mail import Mail, Message
+
 # import hashlib
 # import psycopg2.extras
 # import MySQLdb.cursors
 
 app = Flask(__name__)
+
+app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
+app.config['MAIL_PORT'] = 2525
+app.config['MAIL_USERNAME'] = '*'
+app.config['MAIL_PASSWORD'] = '*'
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+mail = Mail(app)
 
 # secret key
 app.secret_key = 'your secret key'
@@ -612,6 +622,7 @@ def logout():
 def register():
     # Error message
     msg = ''
+    emailmsg = ''
     # Check username, password and email exist in placeholder
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form:
         username = request.form['username']
@@ -641,6 +652,9 @@ def register():
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
             cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s)', (username, hashed_password, account_type, email,))
             login_db.commit()
+            emailmsg = Message('Hello from the other side!', sender =   'db18parkcompany.io', recipients = [email])
+            emailmsg.body = "Welcome Aboard! Here is your user name: " + username  + ", Please lmk if you have more question!"
+            mail.send(emailmsg)
             msg = 'You have successfully registered!'
         
     elif request.method == 'POST':
