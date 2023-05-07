@@ -158,42 +158,39 @@ def ticket_history():
     if 'loggedin' in session:
         uid = session['id']
         
-        ## get of payment, here only shows up the ticket payment
-        if request.method == 'GET':
-            query_tickets = """
+        ## get all information
+        query_tickets = """
                     select * 
                     from visitors join
                     tickets on visitors.visitor_id = tickets.visitor_id
                     join ticket_attractions on tickets.ticket_id = ticket_attractions.ticket_id
                     join payments on payments.payment_id = ticket_attractions.payment_id
                     where uid=%s
-                """
-            data_cursor.execute(query_tickets, (uid,))
-            tickets = data_cursor.fetchall()
+                    """
+        data_cursor.execute(query_tickets, (uid,))
+        tickets = data_cursor.fetchall()
 
-            query_parking = """
+        query_parking = """
                     select * 
                     from visitors join
                     parking on visitors.visitor_id = parking.visitor_id
                     where uid=%s
-                """
-            data_cursor.execute(query_parking, (uid,))
-            parking = data_cursor.fetchall()
+                    """
+        data_cursor.execute(query_parking, (uid,))
+        parking = data_cursor.fetchall()
 
-            query_shows = """
+        query_shows = """
                     select *
                     from visitors join
                     visitor_shows on visitors.visitor_id = visitor_shows.visitor_id
                     join shows on shows.show_id = visitor_shows.show_id
                     where uid=%s
                     """
-            data_cursor.execute(query_shows, (uid,))
-            shows = data_cursor.fetchall()
-            return render_template('ticket_history.html',
-                                   tickets=tickets,
-                                   parking=parking,
-                                   shows=shows)
-        elif request.method == 'POST':
+        data_cursor.execute(query_shows, (uid,))
+        shows = data_cursor.fetchall()
+
+        ## receive edit request
+        if request.method == 'POST':
             print(request.form)
             action = request.form['action']
 
@@ -202,13 +199,20 @@ def ticket_history():
                 vdate = request.form['Vdate']
                 mysql = 'update tickets set visit_date=%s'
                 data_cursor.execute(mysql, (vdate,))
+
+                data_cursor.execute(query_tickets, (uid,))
+                tickets = data_cursor.fetchall()
                 data_db.commit()
             # handle refund
             elif action == 'cancel_parking':
                 cancel_parking(request.form['parking_payment_id'])
+                data_cursor.execute(query_parking, (uid,))
+                parking = data_cursor.fetchall()
             elif action == 'cancel_show':
                 cancel_show(request.form['show_payment_id'])
-            else:
+                data_cursor.execute(query_shows, (uid,))
+                shows = data_cursor.fetchall()
+            elif action == 'refund':
                 ticket_id = request.form['row_value']
                 #delete step by step
                 #ticket_attraction, card, payments, tickets
@@ -235,20 +239,15 @@ def ticket_history():
                 data_cursor.execute(paymentsql, (paymentID,))
                 data_cursor.execute(attractionsql, (ticket_id,))
                 data_cursor.execute(ticketsql, (ticket_id,))
-                data_db.commit()
-            
-            mysql = """
-                select * 
-                from visitors join
-                tickets on visitors.visitor_id = tickets.visitor_id
-                join ticket_attractions on tickets.ticket_id = ticket_attractions.ticket_id
-                join payments on payments.payment_id = ticket_attractions.payment_id
-                where uid=%s
-            """
-            data_cursor.execute(mysql, (uid,))
-            data = data_cursor.fetchall()
 
-            return render_template('ticketPayment_history.html', data=data)
+                data_cursor.execute(query_tickets, (uid,))
+                tickets = data_cursor.fetchall()
+                data_db.commit()
+
+        return render_template('ticket_history.html',
+                                tickets=tickets,
+                                parking=parking,
+                                shows=shows)
         
     return redirect(url_for('login'))
 
