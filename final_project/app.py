@@ -126,6 +126,16 @@ def delete_type2(id):
     except:
         return redirect(url_for('ashows'))
     
+# Try delete function [attraction]
+@app.route('/delete3/<int:id>')
+def delete_type3(id):
+    try:
+        data_cursor.execute('DELETE FROM menu_items where menu_id = %s', (id,))
+        data_db.commit()
+        return redirect(url_for('items'))
+    except:
+        return redirect(url_for('items'))
+    
 
 @app.route('/')
 def index():
@@ -383,6 +393,32 @@ def emphome():
             return redirect(url_for('home'))
     # If not, redirect to the login page
     return redirect(url_for('login'))
+
+# add item and delete item
+@app.route('/login/items', methods=['GET', 'POST'])
+def items():
+    msg = ''
+    data = {}
+    if 'loggedin' in session:
+        if (session['account_type'] == 'employees'):
+            if request.method == 'POST':
+                item_name = request.form['item_name']
+                unite_price = request.form['unit_price']
+                cursor = data_db.cursor(dictionary=True)
+                cursor.execute("INSERT INTO menu_items VALUES (NULL,%s,%s)", (item_name,unite_price,))
+                data_db.commit()
+                msg = 'Item insert complete'
+
+            cursor = data_db.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM menu_items")
+            data = cursor.fetchall()
+
+            return render_template('items.html',msg = msg,data = data)
+        else:
+            return redirect(url_for('home'))
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
+
 
 # add & delete attraction
 @app.route('/login/attractions', methods=['GET', 'POST'])
