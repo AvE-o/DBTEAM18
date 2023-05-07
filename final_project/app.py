@@ -76,13 +76,17 @@ def get_available_shows_by_date(visit_date):
     return shows
 
 def cancel_parking(payment_id):
-    data_cursor.execute('delete from parking where payment_id=%s' % payment_id)
-    data_cursor.execute('delete from payments where payment_id=%s' % payment_id)
+    delete_parking_sql = 'delete from parking where payment_id=%s'
+    data_cursor.execute(delete_parking_sql % (payment_id, ))
+    delete_payment_sql = 'delete from payments where payment_id=%s'
+    data_cursor.execute(delete_payment_sql % (payment_id, ))
     data_db.commit()
 
 def cancel_show(payment_id):
-    data_cursor.execute('delete from visitor_shows where payment_id=%s' % payment_id)
-    data_cursor.execute('delete from payments where payment_id=%s' % payment_id)
+    delete_show_sql = 'delete from visitor_shows where payment_id=%s'
+    data_cursor.execute(delete_show_sql, (payment_id, ))
+    delete_payment_sql = 'delete from payments where payment_id=%s'
+    data_cursor.execute(delete_payment_sql, (payment_id, ))
     data_db.commit()
 
 # Try delete function [attraction type]
@@ -627,8 +631,8 @@ def parking_spot():
             FROM visitors 
             LEFT JOIN parking ON visitors.visitor_id = parking.visitor_id 
             WHERE parking_id IS NULL and uid = %s;
-            """ % (session['id'])
-            data_cursor.execute(query_visitor_without_parking)
+            """
+            data_cursor.execute(query_visitor_without_parking, (session['id'], ))
             visitor_without_parking = data_cursor.fetchall()
             # All visitor has a parking lot
             if len(visitor_without_parking) == 0:
@@ -731,12 +735,14 @@ def add_payment(price, cardholder_name, card_number, card_type, exp_date, card_c
     #First: add payment information to the payment table
     #Second: add card information to the card table
     #Third: return the payment id
-    data_cursor.execute('INSERT INTO `payments` (`pay_method`, `pay_date`, `pay_amount`) VALUES ("CD", now(), %s);' % price)
+    add_payment_sql = 'INSERT INTO `payments` (`pay_method`, `pay_date`, `pay_amount`) VALUES ("CD", now(), %s);'
+    data_cursor.execute(add_payment_sql, (price,))
     data_db.commit()
     data_cursor.execute('SELECT LAST_INSERT_ID()')
     payment_id = data_cursor.fetchone()['LAST_INSERT_ID()']
     f_name, l_name = cardholder_name.split(' ')
-    data_cursor.execute("INSERT INTO `card` (`payment_id`, `fname`, `lname`, `card_num`, `cvv`, `expir_date`, `card_type`) VALUES (%s, '%s', '%s', '%s', '%s', '%s', '%s');" % (payment_id, f_name, l_name, card_number, card_cvv, convert_exp_date_to_sql_date(exp_date), card_type))
+    add_card_sql = 'INSERT INTO `card` (`payment_id`, `fname`, `lname`, `card_num`, `cvv`, `expir_date`, `card_type`) VALUES (%s, %s, %s, %s, %s, %s, %s);'
+    data_cursor.execute(add_card_sql, (payment_id, f_name, l_name, card_number, card_cvv, convert_exp_date_to_sql_date(exp_date), card_type,))
     return payment_id
 
 
@@ -752,11 +758,13 @@ def add_parking(v_id, lot, price, payment_id):
         if available_spots[i] == 0:
             spot = i
             break
-    data_cursor.execute('INSERT INTO parking (visitor_id, lot, spot_number, time_in, time_out, fee, payment_id) VALUES (%s, "%s", %s, %s, DATE_ADD(%s, INTERVAL 1 DAY), %s, %s)' % (v_id, lot, spot,visit_date, visit_date, price, payment_id))
+    add_parking_sql = 'INSERT INTO `parking` (`visitor_id`, `lot`, `spot_number`, `time_in`, `time_out`, `fee`, `payment_id`) VALUES (%s, %s, %s, %s, DATE_ADD(%s, INTERVAL 1 DAY), %s, %s);'
+    data_cursor.execute(add_parking_sql, (v_id, lot, spot,visit_date, visit_date, price, payment_id,))
     data_db.commit()
 
 def add_visitor_shows(v_id, show_id, payment_id):
-    data_cursor.execute('INSERT INTO visitor_shows (visitor_id, show_id, payment_id) VALUES (%s,  %s, %s, )' % (v_id, show_id, payment_id))
+    add_show_sql = 'INSERT INTO `visitor_shows` (`visitor_id`, `show_id`, `payment_id`) VALUES (%s, %s, %s);'
+    data_cursor.execute(add_show_sql, (v_id, show_id, payment_id,))
     data_db.commit()
 
 
