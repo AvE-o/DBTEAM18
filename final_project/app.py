@@ -377,8 +377,10 @@ def purchase():
 @app.route('/login/emphome', methods=['GET', 'POST'])
 def emphome():
     if 'loggedin' in session:
-        return render_template('emphome.html', username=session['username'])
-    
+        if (session['account_type'] == 'employees'):
+            return render_template('emphome.html', username=session['username'])
+        else:
+            return redirect(url_for('home'))
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
@@ -390,44 +392,46 @@ def attractions():
     attraction_data = {}
 
     if 'loggedin' in session:
-        # enter attraction type
-        if request.method == 'POST':
-            if request.form['submit_button'] == "type":
-                attraction_type = request.form['attraction_type']
-                cursor = data_db.cursor(dictionary=True)
-                cursor.execute("INSERT INTO attraction_type VALUES (NULL,%s)", (attraction_type,))
-                data_db.commit()
-                msg = 'Type enter complete'
+        if (session['account_type'] == 'employees'):
+            # enter attraction type
+            if request.method == 'POST':
+                if request.form['submit_button'] == "type":
+                    attraction_type = request.form['attraction_type']
+                    cursor = data_db.cursor(dictionary=True)
+                    cursor.execute("INSERT INTO attraction_type VALUES (NULL,%s)", (attraction_type,))
+                    data_db.commit()
+                    msg = 'Type enter complete'
 
-            elif request.form['submit_button'] == "attraction":
-                attraction_name = request.form['att_name']
-                description = request.form['description']
-                attraction_type1 = request.form['attraction_type1']
-                status = request.form['status']
-                capacity = request.form['capacity']
-                height = request.form['height']
-                duration = request.form['duration']
-                location = request.form['location']
-                cursor = data_db.cursor(dictionary=True)
-                cursor.execute("INSERT INTO attractions VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s)", 
-                               (attraction_name,description,attraction_type1,status,capacity,height,duration,location,))
-                data_db.commit()
-                msg = 'Attraction enter complete'
+                elif request.form['submit_button'] == "attraction":
+                    attraction_name = request.form['att_name']
+                    description = request.form['description']
+                    attraction_type1 = request.form['attraction_type1']
+                    status = request.form['status']
+                    capacity = request.form['capacity']
+                    height = request.form['height']
+                    duration = request.form['duration']
+                    location = request.form['location']
+                    cursor = data_db.cursor(dictionary=True)
+                    cursor.execute("INSERT INTO attractions VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                                (attraction_name,description,attraction_type1,status,capacity,height,duration,location,))
+                    data_db.commit()
+                    msg = 'Attraction enter complete'
 
-        cursor = data_db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM attraction_type")
-        data = cursor.fetchall()
-        #print(data)
-        cursor.close()
+            cursor = data_db.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM attraction_type")
+            data = cursor.fetchall()
+            #print(data)
+            cursor.close()
 
-        cursor = data_db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM attractions")
-        attraction_data = cursor.fetchall()
-        #print(attraction_data)
+            cursor = data_db.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM attractions")
+            attraction_data = cursor.fetchall()
+            #print(attraction_data)
 
 
-        return render_template('attractions.html', msg = msg, data = data, attraction_data = attraction_data)
-
+            return render_template('attractions.html', msg = msg, data = data, attraction_data = attraction_data)
+        else:
+            return redirect(url_for('home'))
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
@@ -437,26 +441,28 @@ def ashows():
     msg = ''
     data = {}
     if 'loggedin' in session:
-        if request.method == 'POST':
-            show_name = request.form['show_name']
-            show_type = request.form['show_type']
-            show_start = request.form['show_start']
-            show_end = request.form['show_end']
-            show_wheelchair = request.form['show_wheelchair']
-            show_price = request.form['show_price']
-            show_description = request.form['show_description']
+        if (session['account_type'] == 'employees'):
+            if request.method == 'POST':
+                show_name = request.form['show_name']
+                show_type = request.form['show_type']
+                show_start = request.form['show_start']
+                show_end = request.form['show_end']
+                show_wheelchair = request.form['show_wheelchair']
+                show_price = request.form['show_price']
+                show_description = request.form['show_description']
+                cursor = data_db.cursor(dictionary=True)
+                cursor.execute("INSERT INTO shows VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)", 
+                                (show_name,show_type,show_start,show_end,show_wheelchair,show_price,show_description,))
+                data_db.commit()
+                msg = 'Show enter complete'
+            
             cursor = data_db.cursor(dictionary=True)
-            cursor.execute("INSERT INTO shows VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)", 
-                               (show_name,show_type,show_start,show_end,show_wheelchair,show_price,show_description,))
-            data_db.commit()
-            msg = 'Show enter complete'
-        
-        cursor = data_db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM shows")
-        data = cursor.fetchall()
+            cursor.execute("SELECT * FROM shows")
+            data = cursor.fetchall()
 
-        return render_template('shows.html', msg = msg, data = data)
-    
+            return render_template('shows.html', msg = msg, data = data)
+        else:
+            return redirect(url_for('home'))
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
@@ -489,13 +495,15 @@ def testdb():
 @app.route('/login/userdata', methods=['GET', 'POST'])
 def userdata():
     if'loggedin' in session:
-        cursor = login_db.cursor(dictionary=True)
-        # account_type = 'employees'
-        cursor.execute('SELECT * FROM accounts')
-        data = cursor.fetchall()
+        if (session['account_type'] == 'employees'):
+            cursor = login_db.cursor(dictionary=True)
+            # account_type = 'employees'
+            cursor.execute('SELECT * FROM accounts')
+            data = cursor.fetchall()
 
-        return render_template('userdata.html', data = data)
-    
+            return render_template('userdata.html', data = data)
+        else:
+            return redirect(url_for('home'))
     return redirect(url_for('login'))
 
 # Login function
@@ -522,16 +530,18 @@ def login():
         if account:
             hashed_password = account['password']
             account_type = account['account_type']
+            print(account_type)
             if(check_password_hash(hashed_password, password)):
                 if(account_type == 'customers'):
                     # Create session data, this could be use in other routes
                     session['loggedin'] = True
                     session['id'] = account['id']
                     session['username'] = account['username']
+                    session['account_type'] = account['account_type']
                     # Redirect to home page
                     # return "login IN!"
                     return redirect(url_for('home'))
-                else:
+                elif(account_type == 'employees'):
                     # Create session data, this could be use in other routes
                     session['loggedin'] = True
                     session['id'] = account['id']
@@ -555,6 +565,7 @@ def logout():
    session.pop('loggedin', None)
    session.pop('id', None)
    session.pop('username', None)
+   session.pop('account_type', None)
 
    # Redirect to login page
    return redirect(url_for('login'))
