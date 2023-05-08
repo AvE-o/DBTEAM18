@@ -172,7 +172,15 @@ def home():
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
+# Help page, only available to the login customer user
+@app.route('/login/help', methods=['GET', 'POST'])
+def help():
+    # Check user login status
+    if 'loggedin' in session:
+        return render_template('help.html')
 
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
 # see all ticket history and allow edit or refund
 # now can handle edit or refund, maybe need to seperate from this route
 @app.route('/login/payhistory', methods=['GET', 'POST'])
