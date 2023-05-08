@@ -392,14 +392,17 @@ def purchase():
                 msg = "One person can only own one ticket"
                 return render_template('ticket_purchase.html', msg=msg)
             
+            mysql = 'insert into tickets (ticket_method, p_date, visit_date, ticket_type, price, discount, visitor_id) values (%s, %s, %s, %s, %s, %s, %s)'
+            total_price = 200
+            discount = 0.95
             # memeber have special discount
-            if visType == "Member":
-                mysql = 'insert into tickets (ticket_method, p_date, visit_date, ticket_type, price, discount, visitor_id) values (%s, %s, %s, %s, %s, %s, %s)'
-                data_cursor.execute(mysql, ('online', date.today(), Vdate, 'Member', 200, 0.85,  visitor_id))
-            else:
-                mysql = 'insert into tickets (ticket_method, p_date, visit_date, ticket_type, price, discount, visitor_id) values (%s, %s, %s, %s, %s, %s, %s)'
-                # need to solve age here for ticket type {adult, child, senior, member} -- sloved
-                data_cursor.execute(mysql, ('online', date.today(), Vdate, 'Child', 200, 0.81,  visitor_id))
+            if visType == "M":
+                discount = 0.85
+            elif visType == 'G':
+                total_price = 200 * int(TypeNum)
+                # print("this is the totoal price in group,", total_price)
+
+            data_cursor.execute(mysql, ('online', date.today(), Vdate, visType, total_price, discount,  visitor_id))
             data_db.commit()
         
             # store ticket id for later use
