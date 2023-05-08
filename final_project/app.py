@@ -4,11 +4,21 @@ from werkzeug.security import generate_password_hash, check_password_hash #hash 
 import mysql.connector
 import re 
 from utils import convert_date_to_day, convert_exp_date_to_sql_date
+from flask_mail import Mail, Message
+
 # import hashlib
 # import psycopg2.extras
 # import MySQLdb.cursors
 
 app = Flask(__name__)
+
+app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
+app.config['MAIL_PORT'] = 2525
+app.config['MAIL_USERNAME'] = '*'
+app.config['MAIL_PASSWORD'] = '*'
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+mail = Mail(app)
 
 # secret key
 app.secret_key = 'your secret key'
@@ -126,6 +136,16 @@ def delete_type2(id):
     except:
         return redirect(url_for('ashows'))
     
+# Try delete function [attraction]
+@app.route('/delete3/<int:id>')
+def delete_type3(id):
+    try:
+        data_cursor.execute('DELETE FROM menu_items where menu_id = %s', (id,))
+        data_db.commit()
+        return redirect(url_for('items'))
+    except:
+        return redirect(url_for('items'))
+    
 
 @app.route('/')
 def index():
@@ -152,7 +172,15 @@ def home():
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
+# Help page, only available to the login customer user
+@app.route('/login/help', methods=['GET', 'POST'])
+def help():
+    # Check user login status
+    if 'loggedin' in session:
+        return render_template('help.html')
 
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
 # see all ticket history and allow edit or refund
 # now can handle edit or refund, maybe need to seperate from this route
 @app.route('/login/payhistory', methods=['GET', 'POST'])
@@ -377,10 +405,38 @@ def purchase():
 @app.route('/login/emphome', methods=['GET', 'POST'])
 def emphome():
     if 'loggedin' in session:
-        return render_template('emphome.html', username=session['username'])
-    
+        if (session['account_type'] == 'employees'):
+            return render_template('emphome.html', username=session['username'])
+        else:
+            return redirect(url_for('home'))
     # If not, redirect to the login page
     return redirect(url_for('login'))
+
+# add item and delete item
+@app.route('/login/items', methods=['GET', 'POST'])
+def items():
+    msg = ''
+    data = {}
+    if 'loggedin' in session:
+        if (session['account_type'] == 'employees'):
+            if request.method == 'POST':
+                item_name = request.form['item_name']
+                unite_price = request.form['unit_price']
+                cursor = data_db.cursor(dictionary=True)
+                cursor.execute("INSERT INTO menu_items VALUES (NULL,%s,%s)", (item_name,unite_price,))
+                data_db.commit()
+                msg = 'Item insert complete'
+
+            cursor = data_db.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM menu_items")
+            data = cursor.fetchall()
+
+            return render_template('items.html',msg = msg,data = data)
+        else:
+            return redirect(url_for('home'))
+    # If not, redirect to the login page
+    return redirect(url_for('login'))
+
 
 # add & delete attraction
 @app.route('/login/attractions', methods=['GET', 'POST'])
@@ -390,44 +446,46 @@ def attractions():
     attraction_data = {}
 
     if 'loggedin' in session:
-        # enter attraction type
-        if request.method == 'POST':
-            if request.form['submit_button'] == "type":
-                attraction_type = request.form['attraction_type']
-                cursor = data_db.cursor(dictionary=True)
-                cursor.execute("INSERT INTO attraction_type VALUES (NULL,%s)", (attraction_type,))
-                data_db.commit()
-                msg = 'Type enter complete'
+        if (session['account_type'] == 'employees'):
+            # enter attraction type
+            if request.method == 'POST':
+                if request.form['submit_button'] == "type":
+                    attraction_type = request.form['attraction_type']
+                    cursor = data_db.cursor(dictionary=True)
+                    cursor.execute("INSERT INTO attraction_type VALUES (NULL,%s)", (attraction_type,))
+                    data_db.commit()
+                    msg = 'Type enter complete'
 
-            elif request.form['submit_button'] == "attraction":
-                attraction_name = request.form['att_name']
-                description = request.form['description']
-                attraction_type1 = request.form['attraction_type1']
-                status = request.form['status']
-                capacity = request.form['capacity']
-                height = request.form['height']
-                duration = request.form['duration']
-                location = request.form['location']
-                cursor = data_db.cursor(dictionary=True)
-                cursor.execute("INSERT INTO attractions VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s)", 
-                               (attraction_name,description,attraction_type1,status,capacity,height,duration,location,))
-                data_db.commit()
-                msg = 'Attraction enter complete'
+                elif request.form['submit_button'] == "attraction":
+                    attraction_name = request.form['att_name']
+                    description = request.form['description']
+                    attraction_type1 = request.form['attraction_type1']
+                    status = request.form['status']
+                    capacity = request.form['capacity']
+                    height = request.form['height']
+                    duration = request.form['duration']
+                    location = request.form['location']
+                    cursor = data_db.cursor(dictionary=True)
+                    cursor.execute("INSERT INTO attractions VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                                (attraction_name,description,attraction_type1,status,capacity,height,duration,location,))
+                    data_db.commit()
+                    msg = 'Attraction enter complete'
 
-        cursor = data_db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM attraction_type")
-        data = cursor.fetchall()
-        #print(data)
-        cursor.close()
+            cursor = data_db.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM attraction_type")
+            data = cursor.fetchall()
+            #print(data)
+            cursor.close()
 
-        cursor = data_db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM attractions")
-        attraction_data = cursor.fetchall()
-        #print(attraction_data)
+            cursor = data_db.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM attractions")
+            attraction_data = cursor.fetchall()
+            #print(attraction_data)
 
 
-        return render_template('attractions.html', msg = msg, data = data, attraction_data = attraction_data)
-
+            return render_template('attractions.html', msg = msg, data = data, attraction_data = attraction_data)
+        else:
+            return redirect(url_for('home'))
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
@@ -437,26 +495,28 @@ def ashows():
     msg = ''
     data = {}
     if 'loggedin' in session:
-        if request.method == 'POST':
-            show_name = request.form['show_name']
-            show_type = request.form['show_type']
-            show_start = request.form['show_start']
-            show_end = request.form['show_end']
-            show_wheelchair = request.form['show_wheelchair']
-            show_price = request.form['show_price']
-            show_description = request.form['show_description']
+        if (session['account_type'] == 'employees'):
+            if request.method == 'POST':
+                show_name = request.form['show_name']
+                show_type = request.form['show_type']
+                show_start = request.form['show_start']
+                show_end = request.form['show_end']
+                show_wheelchair = request.form['show_wheelchair']
+                show_price = request.form['show_price']
+                show_description = request.form['show_description']
+                cursor = data_db.cursor(dictionary=True)
+                cursor.execute("INSERT INTO shows VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)", 
+                                (show_name,show_type,show_start,show_end,show_wheelchair,show_price,show_description,))
+                data_db.commit()
+                msg = 'Show enter complete'
+            
             cursor = data_db.cursor(dictionary=True)
-            cursor.execute("INSERT INTO shows VALUES (NULL,%s,%s,%s,%s,%s,%s,%s)", 
-                               (show_name,show_type,show_start,show_end,show_wheelchair,show_price,show_description,))
-            data_db.commit()
-            msg = 'Show enter complete'
-        
-        cursor = data_db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM shows")
-        data = cursor.fetchall()
+            cursor.execute("SELECT * FROM shows")
+            data = cursor.fetchall()
 
-        return render_template('shows.html', msg = msg, data = data)
-    
+            return render_template('shows.html', msg = msg, data = data)
+        else:
+            return redirect(url_for('home'))
     # If not, redirect to the login page
     return redirect(url_for('login'))
 
@@ -489,13 +549,15 @@ def testdb():
 @app.route('/login/userdata', methods=['GET', 'POST'])
 def userdata():
     if'loggedin' in session:
-        cursor = login_db.cursor(dictionary=True)
-        # account_type = 'employees'
-        cursor.execute('SELECT * FROM accounts')
-        data = cursor.fetchall()
+        if (session['account_type'] == 'employees'):
+            cursor = login_db.cursor(dictionary=True)
+            # account_type = 'employees'
+            cursor.execute('SELECT * FROM accounts')
+            data = cursor.fetchall()
 
-        return render_template('userdata.html', data = data)
-    
+            return render_template('userdata.html', data = data)
+        else:
+            return redirect(url_for('home'))
     return redirect(url_for('login'))
 
 # Login function
@@ -522,16 +584,18 @@ def login():
         if account:
             hashed_password = account['password']
             account_type = account['account_type']
+            print(account_type)
             if(check_password_hash(hashed_password, password)):
                 if(account_type == 'customers'):
                     # Create session data, this could be use in other routes
                     session['loggedin'] = True
                     session['id'] = account['id']
                     session['username'] = account['username']
+                    session['account_type'] = account['account_type']
                     # Redirect to home page
                     # return "login IN!"
                     return redirect(url_for('home'))
-                else:
+                elif(account_type == 'employees'):
                     # Create session data, this could be use in other routes
                     session['loggedin'] = True
                     session['id'] = account['id']
@@ -555,6 +619,7 @@ def logout():
    session.pop('loggedin', None)
    session.pop('id', None)
    session.pop('username', None)
+   session.pop('account_type', None)
 
    # Redirect to login page
    return redirect(url_for('login'))
@@ -565,6 +630,7 @@ def logout():
 def register():
     # Error message
     msg = ''
+    emailmsg = ''
     # Check username, password and email exist in placeholder
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form:
         username = request.form['username']
@@ -594,6 +660,9 @@ def register():
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
             cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s, %s)', (username, hashed_password, account_type, email,))
             login_db.commit()
+            emailmsg = Message('Hello from the other side!', sender =   'db18parkcompany.io', recipients = [email])
+            emailmsg.body = "Welcome Aboard! Here is your user name: " + username  + ", Please lmk if you have more question!"
+            mail.send(emailmsg)
             msg = 'You have successfully registered!'
         
     elif request.method == 'POST':
