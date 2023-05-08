@@ -6,9 +6,10 @@
 <form method="POST" enctype="multipart/form-data" action="{{ url_for('complete_payment') }}">
     <div class="form-group">
         <label for="ticket">Bind to tickets</label>
-        <select class="form-control" id="ticket" name="ticket" onchange="updateOptions()">
+        <select class="form-control" id="ticket" name="ticket" onchange="updateOptions()" >
+            <option disabled selected value="">Please select the visitor</option>
             {% for row in tickets %}
-                <option value="{{row.v_id}}">{{row.v_name}} ({{row.visit_date}})</option>
+                <option value="{{row.v_id}}" >{{row.v_name}} ({{row.visit_date}})</option>
             {% endfor %}
         </select>
     </div>
@@ -59,7 +60,7 @@
     <div class="form-group">
         <label for="checkout_type">Checkout Type</label>
         <select class="form-control" id="checkout_type" name="checkout_type" value="{{type}}">
-            <option value="{{type}}" >{{type}}</option>
+            <option value="{{type}}" selected>{{type}}</option>
         </select>
     </div>
     {% if type == 'parking' %}
@@ -90,7 +91,7 @@
     </div>
     <div class="form-group">
         <label for="cardholder_name">Cardholder's Name</label>
-        <input type="text" class="form-control" id="cardholder_name" name="cardholder_name" placeholder="Enter cardholder's name" required>
+        <input type="text" class="form-control" id="cardholder_name" name="cardholder_name" placeholder="Enter cardholder's name" pattern="^[a-zA-Z]{2,}\s[a-zA-Z]{2,}$" required>
     </div>
     <div class="form-group">
         <label for="card_number">Card Number</label>
@@ -110,7 +111,7 @@
     
     <div class="form-group">
         <label for="card_cvv">Card CVV</label>
-        <input type="text" class="form-control" id="card_cvv" name="card_cvv" placeholder="Enter card CVV" pattern="^[0-9]{3, 4}$" required>
+        <input type="text" class="form-control" id="card_cvv" name="card_cvv" placeholder="Enter card CVV" pattern="[0-9]{3}" required>
     </div>
     <div class="form-group">
         <div class="mx-auto">

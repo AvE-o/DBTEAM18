@@ -681,6 +681,7 @@ def get_available_shows():
     v_id = request.args.get('v_id','')
     visit_date = get_date_by_vid(v_id)
     available_shows = get_available_shows_by_date(visit_date)
+    print(visit_date, available_shows)
     return jsonify(available_shows)
 
 
@@ -755,7 +756,7 @@ def add_payment(price, cardholder_name, card_number, card_type, exp_date, card_c
 def add_parking(v_id, lot, price, payment_id):
     visit_date = get_ticket_by_vid(v_id)['visit_date']
     available_spots = [0] * 400
-    data_cursor.execute('SELECT * FROM parking WHERE date(time_in) = %s and lot = "%s"' % (visit_date, "lot"+lot))
+    data_cursor.execute('SELECT * FROM parking WHERE date(time_in) = %s and lot = "%s"' % (convert_date_to_day(visit_date), lot[3]))
     used_spots = data_cursor.fetchall()
     for spot in used_spots:
         available_spots[spot['spot_number']] = 1
