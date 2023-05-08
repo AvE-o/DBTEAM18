@@ -21,7 +21,6 @@
             
             const selectedTicket = ticketSelect.options[ticketSelect.selectedIndex].value;
             const checkout_type = typeSelect.options[typeSelect.selectedIndex].value;
-            console.log(checkout_type)
             // 发送异步请求到后端，获取可选的lot
             if (checkout_type == 'parking') {
                 fetch(`/get_remain_spots?v_id=${selectedTicket}`)
@@ -47,15 +46,17 @@
                     .then(shows => {
                         const showSelect = document.querySelector('#show');
                         showSelect.innerHTML = '';
-                        for (const show of Object.entries(shows)) {
+                        for (const [key, show] of Object.entries(shows)) {
                             const option = document.createElement("option");
+                            console.log(show.price)
                             option.value = show.show_id;
-                            option.text = `${show.show_name}`;
+                            option.text = `${show.show_name}- $ ${show.price}`;
                             showSelect.add(option);
                         }
                     });
             }
         }
+
     </script>
     <div class="form-group">
         <label for="checkout_type">Checkout Type</label>
@@ -65,7 +66,7 @@
     </div>
     {% if type == 'parking' %}
         <div class="form-group">
-            <label for="lot">Park Location</label>
+            <label for="lot">Park Location $16.99/day</label>
             <select class="form-control" id="lot" name="lot">
                 <!-- <option value="A" {% if item == "lotA" %}selected{% endif %}>lotA</option>
                 <option value="B" {% if item == "lotB" %}selected{% endif %}>lotB</option>
@@ -77,18 +78,10 @@
         <div class="form-group">
             <label for="show">Show Name</label>
             <select class="form-control" id="show" name="show">
+                <option disabled selected value="">Please select show</option>
             </select>
         </div>
-    {% elif type == 'store' %}
-        <div class="form-group">
-            <label for="item">Item Name</label>
-            <p class="form-control" id="item" name="item" disabled>{{item}}</p>
-        </div>
     {% endif %}
-    <div class="form-group">
-        <label for="price">Price</label>
-        <input type="number" class="form-control" id="price" name="price" value="{{price}}" readonly>
-    </div>
     <div class="form-group">
         <label for="cardholder_name">Cardholder's Name</label>
         <input type="text" class="form-control" id="cardholder_name" name="cardholder_name" placeholder="Enter cardholder's name" pattern="^[a-zA-Z]{2,}\s[a-zA-Z]{2,}$" required>

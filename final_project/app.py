@@ -12,10 +12,10 @@ from flask_mail import Mail, Message
 
 app = Flask(__name__)
 
+app.config['MAIL_USERNAME'] = 'e666b7bdcb0770'
+app.config['MAIL_PASSWORD'] = 'b4653c6d5a3a9f'
 app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
 app.config['MAIL_PORT'] = 2525
-app.config['MAIL_USERNAME'] = '*'
-app.config['MAIL_PASSWORD'] = '*'
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 mail = Mail(app)
@@ -88,13 +88,15 @@ def get_remain_spot_by_date(visit_date):
     return remain_spot_by_lot
 
 def get_available_shows_by_date(visit_date):
-    data_cursor.execute('SELECT show_id, show_name FROM shows WHERE s_time = "%s"' % visit_date)
+    data_cursor.execute('SELECT show_id, show_name, price FROM shows WHERE date(s_time) = "%s"' % visit_date)
     shows =  data_cursor.fetchall()
     return shows
 
 def cancel_parking(payment_id):
     delete_parking_sql = 'delete from parking where payment_id=%s'
     data_cursor.execute(delete_parking_sql % (payment_id, ))
+    delete_card_sql = 'delete from card where payment_id=%s'
+    data_cursor.execute(delete_card_sql % (payment_id, ))
     delete_payment_sql = 'delete from payments where payment_id=%s'
     data_cursor.execute(delete_payment_sql % (payment_id, ))
     data_db.commit()
@@ -102,9 +104,18 @@ def cancel_parking(payment_id):
 def cancel_show(payment_id):
     delete_show_sql = 'delete from visitor_shows where payment_id=%s'
     data_cursor.execute(delete_show_sql, (payment_id, ))
+    delete_card_sql = 'delete from card where payment_id=%s'
+    data_cursor.execute(delete_card_sql % (payment_id, ))
     delete_payment_sql = 'delete from payments where payment_id=%s'
     data_cursor.execute(delete_payment_sql, (payment_id, ))
     data_db.commit()
+
+
+def get_price_by_show_id(show_id):
+    data_cursor.execute('SELECT price FROM shows WHERE show_id = %s' % (show_id))
+    price = data_cursor.fetchone()
+    return float(price["price"])
+
 
 # Try delete function [attraction type]
 @app.route('/delete/<int:id>')
@@ -695,6 +706,7 @@ def parking_spot():
         #But filter the tickets with parking lot. 
         #redirect to the checkout page with tickets that has parking lot. How to do that?
         tickets = get_tickets_by_uid(session['id'])
+        print(tickets)
         if tickets:
             query_visitor_without_parking = """
             SELECT 
@@ -713,7 +725,7 @@ def parking_spot():
             if len(visitor_without_parking) == 0:
                 #TODO: pop up a message to tell customer that all visitors has a parking lot
                 #flash('All visitors has a parking lot')
-                return render_template('home.html')
+                return redirect(url_for('home'))
             else:
                 return render_template('checkout.html', 
                                        tickets=visitor_without_parking, 
@@ -750,6 +762,8 @@ def get_available_shows():
     v_id = request.args.get('v_id','')
     visit_date = get_date_by_vid(v_id)
     available_shows = get_available_shows_by_date(visit_date)
+    for show in available_shows:
+        show['price'] = int(show['price'])
     print(visit_date, available_shows)
     return jsonify(available_shows)
 
@@ -785,19 +799,19 @@ def complete_payment():
         checkout_type = request.form.get('checkout_type')
         lot = request.form.get('lot')
         show_id = request.form.get('show')
-        item = request.form.get('item')
-        price = request.form.get('price')
         cardholder_name = request.form.get('cardholder_name')
         card_number = request.form.get('card_number')
         card_type = request.form.get('card_type')
         exp_date = request.form.get('exp_date')
         card_cvv = request.form.get('card_cvv')
+        price = 16.99 if checkout_type == "parking" else get_price_by_show_id(show_id)
         if v_id:
             payment_id = add_payment(price, cardholder_name, card_number, card_type, exp_date, card_cvv)
             if checkout_type == "parking":
                 add_parking(v_id, lot, price, payment_id)
             elif checkout_type == "shows":
-                add_visitor_shows(v_id, show_id, price)
+                get_price_by_show_id(show_id)
+                add_visitor_shows(v_id, show_id, payment_id)
             # elif checkout_type == "store":
             #     add_item(v_id, item, price)
             #redirect to the user payment history page
