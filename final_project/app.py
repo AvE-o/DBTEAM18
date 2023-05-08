@@ -12,10 +12,11 @@ from flask_mail import Mail, Message
 
 app = Flask(__name__)
 
-app.config['MAIL_USERNAME'] = 'e666b7bdcb0770'
-app.config['MAIL_PASSWORD'] = 'b4653c6d5a3a9f'
+
 app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
 app.config['MAIL_PORT'] = 2525
+app.config['MAIL_USERNAME'] = 'e666b7bdcb0770'
+app.config['MAIL_PASSWORD'] = 'b4653c6d5a3a9f'
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 mail = Mail(app)
@@ -266,6 +267,14 @@ def ticket_history():
                 Intersect_value = data_cursor.fetchall()
                 paymentID = Intersect_value[0]['payment_id']
 
+                
+                ## new add delete visitor when delete ticket
+                mysql = 'select * from tickets where ticket_id=%s'
+                data_cursor.execute(mysql, (ticket_id,))
+                ticket_visitorid = data_cursor.fetchone()
+                visitor_id = ticket_visitorid['visitor_id']
+
+
                 cardsql = 'delete from card where payment_id=%s'
                 paymentsql = 'delete from payments where payment_id=%s'
                 sql = 'delete from ticket_attractions where payment_id=%s'
@@ -282,6 +291,10 @@ def ticket_history():
                 data_cursor.execute(paymentsql, (paymentID,))
                 data_cursor.execute(attractionsql, (ticket_id,))
                 data_cursor.execute(ticketsql, (ticket_id,))
+
+                ## new add visitors delete
+                visitorsql = 'delete from visitors where visitor_id=%s'
+                data_cursor.execute(visitorsql, (visitor_id,))
 
                 data_cursor.execute(query_tickets, (uid,))
                 tickets = data_cursor.fetchall()
@@ -391,14 +404,17 @@ def purchase():
                 msg = "One person can only own one ticket"
                 return render_template('ticket_purchase.html', msg=msg)
             
+            mysql = 'insert into tickets (ticket_method, p_date, visit_date, ticket_type, price, discount, visitor_id) values (%s, %s, %s, %s, %s, %s, %s)'
+            total_price = 200
+            discount = 0.95
             # memeber have special discount
-            if visType == "Member":
-                mysql = 'insert into tickets (ticket_method, p_date, visit_date, ticket_type, price, discount, visitor_id) values (%s, %s, %s, %s, %s, %s, %s)'
-                data_cursor.execute(mysql, ('online', date.today(), Vdate, 'Member', 200, 0.85,  visitor_id))
-            else:
-                mysql = 'insert into tickets (ticket_method, p_date, visit_date, ticket_type, price, discount, visitor_id) values (%s, %s, %s, %s, %s, %s, %s)'
-                # need to solve age here for ticket type {adult, child, senior, member} -- sloved
-                data_cursor.execute(mysql, ('online', date.today(), Vdate, 'Child', 200, 0.81,  visitor_id))
+            if visType == "M":
+                discount = 0.85
+            elif visType == 'G':
+                total_price = 200 * int(TypeNum)
+                # print("this is the totoal price in group,", total_price)
+
+            data_cursor.execute(mysql, ('online', date.today(), Vdate, visType, total_price, discount,  visitor_id))
             data_db.commit()
         
             # store ticket id for later use
